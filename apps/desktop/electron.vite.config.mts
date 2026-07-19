@@ -3,9 +3,12 @@ import { defineConfig, externalizeDepsPlugin } from 'electron-vite'
 
 export default defineConfig({
 	main: {
-		// @mywb/core ships TS source resolved via package exports — it must be
-		// bundled, not left as an external require the built app can't load.
-		plugins: [externalizeDepsPlugin({ exclude: ['@mywb/core'] })]
+		// @mywb packages ship TS source resolved via package exports — they must
+		// be bundled, not left as external requires the built app can't load.
+		// yauzl/yazl ride along (deps of node-adapter, no longer declared here).
+		plugins: [
+			externalizeDepsPlugin({ exclude: ['@mywb/core', '@mywb/node-adapter', 'yauzl', 'yazl'] })
+		]
 	},
 	preload: {
 		// Preload must stay CJS so it can run with sandbox: true renderers —

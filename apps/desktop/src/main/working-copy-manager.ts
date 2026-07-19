@@ -16,9 +16,11 @@ import {
 	WORKING_COPY_STATE_FILE,
 	workingCopyStateSchema
 } from '@mywb/core/format'
-import { RecordsDatabase } from './archive/records-database'
-import { extractMywbArchive } from './archive/mywb-archive-reader'
-import { packDirectoryToMywbArchive } from './archive/mywb-archive-writer'
+import {
+	extractMywbArchive,
+	packDirectoryToMywbArchive,
+	RecordsDatabase
+} from '@mywb/node-adapter/archive'
 import { computeScriptDigest } from './document-scripts/script-trust-store'
 
 // A working copy is the live, on-disk form of an open document:

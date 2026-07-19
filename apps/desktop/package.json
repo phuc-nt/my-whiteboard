@@ -20,12 +20,11 @@
 	"dependencies": {
 		"@electron-toolkit/utils": "^4.0.0",
 		"@mywb/core": "*",
+		"@mywb/node-adapter": "*",
 		"@tldraw/assets": "^5.2.5",
 		"react": "^19.2.7",
 		"react-dom": "^19.2.7",
 		"tldraw": "5.2.5",
-		"yauzl": "^3.4.0",
-		"yazl": "^3.3.1",
 		"zod": "^4.4.3"
 	},
 	"devDependencies": {
@@ -34,8 +33,6 @@
 		"@types/node": "^25.0.0",
 		"@types/react": "^19.0.0",
 		"@types/react-dom": "^19.0.0",
-		"@types/yauzl": "^3.4.0",
-		"@types/yazl": "^3.3.1",
 		"@vitejs/plugin-react": "^5.0.0",
 		"electron": "^43.1.1",
 		"electron-builder": "^26.15.3",

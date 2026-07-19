@@ -1,0 +1,26 @@
+{
+	"name": "@mywb/node-adapter",
+	"version": "0.1.0",
+	"description": "Node adapter for My Whiteboard: .mywb archive and sqlite record store shared by the desktop app and headless tools",
+	"type": "module",
+	"private": true,
+	"exports": {
+		"./archive": "./src/archive/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@mywb/core": "*",
+		"yauzl": "^3.4.0",
+		"yazl": "^3.3.1"
+	},
+	"devDependencies": {
+		"@types/node": "^25.0.0",
+		"@types/yauzl": "^3.4.0",
+		"@types/yazl": "^3.3.1",
+		"typescript": "^5.9.0",
+		"vitest": "^4.1.10"
+	}
+}
