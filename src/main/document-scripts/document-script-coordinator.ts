@@ -71,6 +71,11 @@ export function detachDocumentScripts(documentId: string): void {
 	coordinators.delete(documentId)
 }
 
+/** Close every watcher (app quit) so no handles keep the process alive. */
+export function detachAllDocumentScripts(): void {
+	for (const documentId of [...coordinators.keys()]) detachDocumentScripts(documentId)
+}
+
 /** Ensure a watcher exists (called after the workspace creates script/). */
 export function ensureWatching(documentId: string): void {
 	const coordinator = coordinators.get(documentId)

@@ -1,0 +1,22 @@
+appId: com.mywhiteboard.app
+productName: My Whiteboard
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**
+  - package.json
+# .mywb documents open in the app from Finder.
+fileAssociations:
+  - ext: mywb
+    name: My Whiteboard Document
+    role: Editor
+mac:
+  target:
+    - target: dmg
+      arch: universal
+  category: public.app-category.productivity
+  # Unsigned for internal builds; users right-click → Open on first launch.
+  identity: null
+dmg:
+  title: My Whiteboard

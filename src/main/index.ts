@@ -18,6 +18,7 @@ import {
 } from './app-protocols'
 import {
 	attachDocumentScripts,
+	detachAllDocumentScripts,
 	detachDocumentScripts,
 	runNow
 } from './document-scripts/document-script-coordinator'
@@ -53,9 +54,13 @@ import {
 	listRecoverableWorkingCopies
 } from './working-copy-manager'
 
-// A second launch would share userData (server.json clobber, working-copy
-// races) — funnel it into the running instance instead.
-if (!app.requestSingleInstanceLock()) {
+// Tests launch throwaway instances with their own userData — the lock would
+// make them quit immediately. In normal use a second launch would share
+// userData (server.json clobber, working-copy races), so funnel it into the
+// running instance instead.
+if (process.env.MYWB_TEST_USER_DATA) {
+	app.setPath('userData', process.env.MYWB_TEST_USER_DATA)
+} else if (!app.requestSingleInstanceLock()) {
 	app.quit()
 }
 
@@ -379,6 +384,8 @@ app.on('before-quit', () => {
 	// false until will-quit — a crash between here and there must still arm
 	// recovery, and a cancelled quit must not fake a clean exit.
 	sessionWindowsAtQuit = snapshotSessionWindows()
+	// Close file watchers so no open handle keeps the process alive at exit.
+	detachAllDocumentScripts()
 })
 
 // Electron does not drain pending promises on exit: block the quit once,
@@ -386,6 +393,13 @@ app.on('before-quit', () => {
 // quit for real.
 app.on('will-quit', (event) => {
 	if (cleanExitPersisted) return
+	// Under test, let the app quit immediately — the deferred re-quit dance
+	// confuses Playwright's app.close() and the throwaway userData is discarded
+	// anyway, so a final clean session write isn't needed.
+	if (process.env.MYWB_TEST_USER_DATA) {
+		void agentApiServer.dispose().catch(() => {})
+		return
+	}
 	event.preventDefault()
 	Promise.all([
 		writeSession({ cleanExit: true, windows: sessionWindowsAtQuit ?? [] }).catch((error) =>
