@@ -66,11 +66,16 @@ async function main(): Promise<void> {
 			await runAppDocs(serverJson)
 			return
 		}
+		// No code arg on an interactive terminal would silently block on stdin —
+		// treat it as a usage error. Piped stdin (agents) is the supported path.
+		const stdinIsTty = process.stdin.isTTY === true
 		if (command === 'search' && rest.length <= 1) {
+			if (rest.length === 0 && stdinIsTty) usageExit(2)
 			await runAppSearch(rest[0], serverJson)
 			return
 		}
 		if (command === 'exec' && rest.length >= 1 && rest.length <= 2) {
+			if (rest.length === 1 && stdinIsTty) usageExit(2)
 			await runAppExec(rest[0], rest[1], serverJson)
 			return
 		}

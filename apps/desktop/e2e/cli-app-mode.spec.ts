@@ -78,6 +78,29 @@ test('missing server.json → exit 1 with a not-running message', async () => {
 	expect(error.stderr).toContain('not running')
 })
 
+test('wrong token → exit 1 with an HTTP 401 error (not a silent success)', async () => {
+	// Copy server.json with a corrupted token; the CLI must FAIL, not print the
+	// 401 body to stdout with exit 0.
+	const { readFile: rf, writeFile: wf, mkdtemp } = await import('fs/promises')
+	const { tmpdir } = await import('os')
+	const info = JSON.parse(await rf(serverJsonPath(), 'utf8')) as { token: string }
+	info.token = 'wrong-token-0000000000000000000000000000000000000000000000000000000000'
+	const dir = await mkdtemp(join(tmpdir(), 'mywb-badtoken-'))
+	const badPath = join(dir, 'server.json')
+	await wf(badPath, JSON.stringify(info))
+
+	const error = (await run(process.execPath, [CLI, 'app', 'docs'], {
+		env: { ...process.env, MYWB_SERVER_JSON: badPath }
+	}).then(
+		() => {
+			throw new Error('expected wrong token to fail')
+		},
+		(e: { code: number; stderr: string }) => e
+	)) as { code: number; stderr: string }
+	expect(error.code).toBe(1)
+	expect(error.stderr).toContain('401')
+})
+
 test('unknown app subcommand → exit 2 with usage', async () => {
 	const error = (await cli(['app', 'bogus']).then(
 		() => {

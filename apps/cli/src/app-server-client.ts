@@ -36,7 +36,13 @@ export async function loadServerInfo(path: string): Promise<ServerInfo> {
 			`My Whiteboard is not running (no server.json at ${path}). Launch the app, or point --server-json / MYWB_SERVER_JSON at the right userData dir.`
 		)
 	}
-	return serverInfoSchema.parse(JSON.parse(raw))
+	try {
+		return serverInfoSchema.parse(JSON.parse(raw))
+	} catch {
+		throw new AppNotRunningError(
+			`server.json at ${path} is unreadable (stale or truncated) — relaunch the app.`
+		)
+	}
 }
 
 async function post(info: ServerInfo, path: string, code: string): Promise<unknown> {
@@ -51,6 +57,13 @@ async function post(info: ServerInfo, path: string, code: string): Promise<unkno
 		throw new AppNotRunningError(
 			`My Whiteboard is not running (connection refused on port ${info.port}). server.json may be stale — launch the app.`
 		)
+	}
+	// Operator errors (401 bad token, 404 unknown doc, 413, ...) must FAIL the
+	// command — agents chain on exit codes. A 200 with success:false (a JS
+	// error inside exec) is a valid result envelope and passes through.
+	if (!res.ok) {
+		const body = (await res.json().catch(() => null)) as { error?: string } | null
+		throw new Error(`HTTP ${res.status}: ${body?.error ?? res.statusText}`)
 	}
 	return res.json()
 }

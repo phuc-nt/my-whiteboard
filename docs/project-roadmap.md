@@ -47,7 +47,7 @@ download), Open/Save/Save As, relay server nhỏ (WebSocket + token) cho agent
 **read-only** (list/search/get — KHÔNG exec). Format `.mywb` bất biến: round-trip
 desktop↔web trên cùng file là acceptance cứng.
 
-## Dogfood + agent integration: `mywb app` live-mode (next)
+## Dogfood + agent integration: `mywb app` live-mode ✅ (done 2026-07-19)
 
 Quyết định 2026-07-19 (idea triage, brainstorm
 `plans/reports/brainstorm-260719-1906-dogfood-and-mywb-live-mode-report.md`):
