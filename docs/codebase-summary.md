@@ -1,65 +1,73 @@
 # Codebase Summary
 
-Electron + electron-vite + React 19 + tldraw 5.2.5, TypeScript, zod. Single
-package `my-whiteboard`. Modules split by concern with descriptive kebab-case
-names.
+npm workspaces monorepo, TypeScript, zod, tldraw 5.2.5, React 19. Modules split
+by concern with descriptive kebab-case names.
 
 ## Layout
 
 ```
-src/
-├── shared/                  # types shared across processes
-│   ├── ipc-contract.ts        # channel names + payload shapes (source of truth)
-│   └── mywb-format-types.ts   # archive/session zod schemas + constants
-├── main/
-│   ├── index.ts               # app lifecycle, IPC handlers, startup/quit, wiring
-│   ├── window-manager.ts      # window-per-doc registry, dirty/save/close state
-│   ├── document-actions.ts    # new/open/save/save-as/close-confirm
-│   ├── renderer-invoke.ts     # main→renderer request/reply (id-correlated)
-│   ├── menu-manager.ts        # native menu (rebuilt on recent-files change)
-│   ├── app-protocols.ts       # mywb-app:// (renderer + scripts), mywb-asset://
-│   ├── session-restore-manager.ts, recent-files-manager.ts
-│   ├── working-copy-manager.ts# live on-disk doc form; save/recover/asset
-│   ├── archive/               # records-database (node:sqlite), zip reader/writer
-│   ├── agent-api/             # HTTP server, search vm, registry, readme, log
-│   ├── agent-skills/          # SKILL.md + mywb helper templates, installer
-│   └── document-scripts/      # coordinator (watcher/rerun), trust store, workspace
-├── preload/index.ts           # contextBridge: desktop.{loadDocument,onInvoke,…}
-└── renderer/src/
-    ├── pages/editor.tsx        # <Tldraw> mount, IPC handler registration
-    ├── document-sync.ts        # stream record diffs + snapshot capture
-    ├── document-serialization.ts, document-assets.ts
-    ├── agent/                  # exec-code-handler (new Function), script-helpers
-    ├── document-scripts/script-runtime.ts  # import/abort/rerun
-    └── shapes/                 # custom-shapes-registry + 3 shape dirs
+packages/core/               # @mywb/core — environment-agnostic (no electron, no node:*)
+└── src/
+    ├── format/                # .mywb zod schemas, SerializedRecord, archive entry names
+    ├── agent-protocol/        # Agent API wire contract: paths, parseCode, safeSerialize, ServerInfo
+    ├── shapes/                # 3 custom shape utils + registry + TLGlobalShapePropsMap augmentation
+    ├── sync/                  # document-sync (SyncTransport injected), document-serialization
+    ├── exec/                  # runExecCode + script-helpers (agent exec semantics)
+    ├── script-runtime/        # runDocumentScript / stopDocumentScript
+    ├── storage/               # RecordStore interface + MemoryRecordStore (+ contract test suite)
+    └── boundary.test.ts       # gate: forbids electron/node:*/window.desktop in core sources
+
+apps/desktop/                # Electron adapter (electron-vite + React)
+├── src/shared/ipc-contract.ts # IPC channel names + payload shapes
+├── src/main/                  # window/document managers, archive (node:sqlite RecordsDatabase
+│                              #   implements RecordStore), agent-api HTTP server, agent-skills,
+│                              #   document-scripts (watcher/trust/workspace), app-protocols
+├── src/preload/               # contextBridge: desktop.{loadDocument,onInvoke,…}
+├── src/renderer/              # editor page: mounts core (shapes/sync/exec/script-runtime)
+│                              #   over the IPC transport; document-assets
+└── e2e/                       # Playwright + Electron suite (agent API, shapes, scripts)
+
+apps/web-smoke/              # Proof consumer: core in a plain browser (vite + chrome test)
 ```
 
 ## Key contracts
 
-- **IPC** goes through `src/shared/ipc-contract.ts`. Renderer→main uses
-  `ipcRenderer.invoke`; main→renderer uses one correlated request/reply pair
-  (`renderer-invoke.ts`) because Electron has no built-in main→renderer invoke.
-- **Document serialization** is contained in `working-copy-manager` (main) and
-  `document-sync` / `document-serialization` (renderer). Swapping the storage
-  format touches only these.
-- **Custom shapes** (tldraw v5 API): each has `static type`, `static props`
-  (`T` validators), `getDefaultProps`, `getGeometry`, `component`,
-  `getIndicatorPath` (Path2D), plus a `TLGlobalShapePropsMap` module
-  augmentation. Registered via `custom-shapes-registry`.
+- **Core boundary**: `packages/core` never imports `electron`, `node:*`, or
+  `window.desktop` — enforced by `boundary.test.ts` (raw-source scan) and the
+  package gate (no electron/@types/node deps). `tldraw`/`react` are
+  peerDependencies (one instance repo-wide — check `npm ls tldraw`).
+- **SyncTransport** (`@mywb/core/sync`): `document-sync` streams through an
+  injected `{pushInitialSnapshot, pushDiff}`; desktop passes `window.desktop`
+  IPC, web-smoke passes a `MemoryRecordStore`. Lifecycle (pagehide flush,
+  dispose) is the adapter's job.
+- **RecordStore** (`@mywb/core/storage`): mirror of the sqlite adapter's API
+  minus `checkpoint()` (WAL-specific). One shared contract test suite runs
+  against both implementations (`@mywb/core/storage/testing`).
+- **IPC** goes through `apps/desktop/src/shared/ipc-contract.ts`; main→renderer
+  uses one correlated request/reply pair (`renderer-invoke.ts`).
+- **Custom shapes** (tldraw v5): static `props` validators carry the
+  agent-readable schema; `TLGlobalShapePropsMap` augmentation ships with
+  `@mywb/core/shapes` imports.
 
 ## Tests
 
-- **Unit (vitest)**: `records-database`, `mywb-archive` (round-trip + path
-  traversal), `skill-templates`. Run with `npm test`.
-- **E2E (Playwright + Electron)**: `e2e/*.spec.ts` launch the built app with a
-  throwaway userData dir and drive it through the agent API — agent read/mutate,
-  custom shapes, document scripts. Run with `npm run e2e`.
+- `npm test` — vitest in every workspace: core (plain Node env — this is the
+  proof core is environment-agnostic) + desktop unit tests.
+- `npm run e2e` — Playwright drives the built Electron app through the agent
+  API (throwaway userData via `MYWB_TEST_USER_DATA`).
+- `npm run e2e:web` — chrome-channel Playwright against `apps/web-smoke`
+  (canvas mount, exec round-trip, sync into memory store).
 
 ## Conventions / gotchas
 
-- `"type": "module"` — preload is forced to CJS in `electron.vite.config.mts`
-  (sandbox requires it); `@tldraw/assets` is excluded from the dep optimizer
-  (it rewrites `import.meta.url` asset refs and breaks them).
-- Dev userData dir is named after the productName ("My Whiteboard").
-- A single-instance lock is active in normal use; e2e sets `MYWB_TEST_USER_DATA`
-  to bypass it and isolate state.
+- Root scripts delegate via `npm run <s> -w <workspace>`; `test`/`typecheck`
+  run `--workspaces --if-present`.
+- `@mywb/core` ships TS source via `exports` (bundler-consumed);
+  `externalizeDepsPlugin({ exclude: ['@mywb/core'] })` keeps it bundled into
+  main/preload. `electronVersion` is pinned in `electron-builder.yml` because
+  workspace hoisting hides the installed electron from builder.
+- Store history reaches `store.listen` subscribers on the next animation frame
+  in browsers — flush-then-read code must wait a frame (see web-smoke).
+- `"type": "module"` — preload is forced to CJS; `@tldraw/assets` is excluded
+  from dep optimizers in both vite configs.
+- DMG output: `apps/desktop/release/`.

@@ -1,8 +1,10 @@
 # System Architecture
 
-**My Whiteboard** — local-first Electron + tldraw app. Single process tree, no
-network server. Three layers: main (Node), preload (bridge), renderer (React +
-tldraw).
+**My Whiteboard** — local-first Electron + tldraw app, built as an npm
+workspaces monorepo: a shared environment-agnostic core (`@mywb/core`) plus a
+desktop adapter (`apps/desktop`: main/preload/renderer) and a browser proof
+consumer (`apps/web-smoke`). The desktop app remains single process tree, no
+network server.
 
 ## Process model
 
@@ -87,22 +89,26 @@ for embedded scripts; CSP `'unsafe-eval'` is scoped to a renderer that only ever
 loads the app's own bundle (no remote scripts; navigation blocked), with
 document *content* treated as data, never executed.
 
-## Long-term direction: hybrid, shared core (decided 2026-07-19)
+## Hybrid, shared core (decided 2026-07-19 — extracted in Stage 1)
 
 The target is a **shared core** package that runs on both desktop and web, with
-thin per-environment **adapters**. The MVP already keeps most core logic in the
-renderer (Electron-independent); the plan is to extract it cleanly rather than
-rewrite for web later.
+thin per-environment **adapters**. Stage 1 extracted it: `@mywb/core` now holds
+shape schemas + validation, the `.mywb` format types, the agent-protocol wire
+contract, agent-exec semantics, the document-script runtime, document-sync
+behind an injected `SyncTransport`, and a `RecordStore` storage contract
+(in-memory impl in core, sqlite impl in the desktop adapter). The boundary —
+no `electron`, no `node:*`, no `window.desktop` in core — is enforced by an
+automated test gate, and `apps/web-smoke` proves the core mounts, execs, and
+syncs in a plain browser.
 
-- **Shared core** (no Electron/browser assumptions): shape schemas + validation,
-  `.mywb` format, agent-exec semantics (protocol + serialize), document-script
-  runtime, document-sync (diff/snapshot).
-- **Desktop adapter** (current `src/main/*`): file system, `node:sqlite`,
-  localhost HTTP server, custom protocols, `fs.watch`.
-- **Web adapter** (future): OPFS / File System Access, WASM sqlite or a backend
-  store, WebSocket sync, an Agent Gateway relaying agent↔canvas (browsers can't
-  host a localhost server), and a script sandbox (iframe/worker — running
-  untrusted scripts in the app origin is a real XSS surface on the web).
+- **Desktop adapter** (`apps/desktop/src/main/*`): file system, `node:sqlite`
+  (`RecordsDatabase implements RecordStore`), localhost HTTP server, custom
+  protocols, `fs.watch`; the renderer wires core over the IPC transport.
+- **Web adapter** (future, Stage 2): OPFS / File System Access, WASM sqlite or a
+  backend store, WebSocket sync, an Agent Gateway relaying agent↔canvas
+  (browsers can't host a localhost server), and a script sandbox (iframe/worker
+  — running untrusted scripts in the app origin is a real XSS surface on the
+  web).
 
 Decision axis: **where the engineer's agent runs.** Local agent → desktop's
 loopback API is the cheapest, zero-config path. Cloud-side agent → web + backend.

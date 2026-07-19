@@ -10,12 +10,16 @@ files. See [docs/product-positioning-abstract.md](docs/product-positioning-abstr
 
 ## Develop
 
+npm workspaces monorepo: `packages/core` (`@mywb/core`, environment-agnostic
+core), `apps/desktop` (Electron adapter), `apps/web-smoke` (browser proof).
+
 ```bash
 npm install
-npm run dev        # launch the app in dev
-npm run typecheck  # tsc (main + renderer)
-npm test           # vitest unit tests
+npm run dev        # launch the desktop app in dev
+npm run typecheck  # tsc across all workspaces
+npm test           # vitest: core (plain Node) + desktop
 npm run e2e        # build + Playwright Electron e2e
+npm run e2e:web    # web-smoke: core in a plain browser (chrome channel)
 npm run build:mac  # unsigned universal macOS DMG → apps/desktop/release/
 ```
 

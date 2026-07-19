@@ -15,6 +15,7 @@
 		"typecheck": "npm run typecheck --workspaces --if-present",
 		"test": "npm run test --workspaces --if-present",
 		"e2e": "npm run e2e -w apps/desktop",
+		"e2e:web": "npm run e2e -w apps/web-smoke",
 		"build:mac": "npm run build:mac -w apps/desktop"
 	}
 }
