@@ -1,0 +1,27 @@
+{
+	"name": "@mywb/web-adapter",
+	"version": "0.1.0",
+	"description": "Browser adapter for My Whiteboard: .mywb archive (fflate) and WASM sqlite record store (sql.js), same format as desktop",
+	"type": "module",
+	"private": true,
+	"exports": {
+		"./web-archive": "./src/web-archive/index.ts",
+		"./wasm-sqlite-store": "./src/wasm-sqlite-store/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@mywb/core": "*",
+		"fflate": "^0.8.2",
+		"sql.js": "^1.14.0"
+	},
+	"devDependencies": {
+		"@mywb/node-adapter": "*",
+		"@types/node": "^25.0.0",
+		"@types/sql.js": "^1.4.9",
+		"typescript": "^5.9.0",
+		"vitest": "^4.1.10"
+	}
+}
