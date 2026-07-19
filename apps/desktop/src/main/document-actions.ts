@@ -1,7 +1,10 @@
-import { BrowserWindow, dialog } from 'electron'
+import { app, BrowserWindow, dialog } from 'electron'
+import { dirname } from 'path'
 import type { EditorSnapshotResult } from '../shared/ipc-contract'
+import { getLastSaveDir, setLastSaveDir } from './last-save-dir-store'
 import { installApplicationMenu } from './menu-manager'
 import { recordRecentFile } from './recent-files-manager'
+import { deriveSuggestedName, resolveSaveDefaultPath } from './save-name-utils'
 import { invokeRenderer } from './renderer-invoke'
 import type { WindowState } from './window-manager'
 import {
@@ -71,9 +74,15 @@ export async function saveDocument(state: WindowState, forceSaveAs = false): Pro
 
 	let targetPath = state.filePath
 	if (!targetPath || forceSaveAs) {
+		// Default the dialog to where the user last saved, with a name derived
+		// from the board content — instead of always Documents/Untitled (P6).
+		const suggestedName = deriveSuggestedName(workingCopy.db.loadAllRecords())
+		const defaultPath =
+			state.filePath ??
+			resolveSaveDefaultPath(await getLastSaveDir(), app.getPath('documents'), suggestedName)
 		const result = await dialog.showSaveDialog(state.window, {
 			filters: FILE_FILTERS,
-			defaultPath: state.filePath ?? 'Untitled.mywb'
+			defaultPath
 		})
 		if (result.canceled || !result.filePath) return false
 		targetPath = result.filePath
@@ -104,6 +113,7 @@ export async function saveDocument(state: WindowState, forceSaveAs = false): Pro
 		setFilePath(state, targetPath)
 		setDirty(state, workingCopy.dirty)
 		await recordRecentFile(targetPath)
+		await setLastSaveDir(dirname(targetPath))
 		await installApplicationMenu()
 		return true
 	} finally {
