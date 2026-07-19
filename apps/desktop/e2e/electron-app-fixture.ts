@@ -39,6 +39,11 @@ export async function cleanupUserData(): Promise<void> {
 	if (userDataDir) await rm(userDataDir, { recursive: true, force: true })
 }
 
+/** Path to the running test app's server.json (for CLI-under-test env). */
+export function serverJsonPath(): string {
+	return join(userDataDir, 'server.json')
+}
+
 /**
  * Shut an app down without hanging the suite. Electron + Playwright's
  * app.close() can block past its timeout on exit; race it against a hard

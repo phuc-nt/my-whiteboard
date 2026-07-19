@@ -1,22 +1,31 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util'
+import { runAppDocs, runAppExec, runAppSearch } from './app-commands'
 import { runFileApply } from './file-apply-command'
 import { runFileRead } from './file-read-command'
 
-// Headless companion to the desktop app. Namespaced under `file` so it never
-// collides with the localhost-API helper script installed by agent skills.
-// Exit codes: 0 ok, 1 operation failed (validation/io), 2 usage error.
+// Companion CLI to the desktop app. `file` works on .mywb files headlessly;
+// `app` talks to the RUNNING desktop app over its localhost agent API.
+// Exit codes: 0 ok, 1 operation failed (validation/io/app not running),
+// 2 usage error.
 
 const USAGE = `Usage:
   mywb file read <path.mywb> [--json]   Print document summary (or full JSON with --json)
   mywb file apply <path.mywb> <changes.json>
                                         Apply {"put":[record...],"removed":[id...]} record-level
                                         changes, validated against the app's shape schemas
+  mywb app docs                         List documents open in the running app (JSON)
+  mywb app search [<js>|-]              Run read-only JS in the app's search context
+                                        (api.getDocs/getShapes/...); code from arg or stdin
+  mywb app exec <documentId> [<js>|-]   Run JS against the live editor of an open document
   mywb --help                           Show this help
 
-Requires Node >= 22.5 (node:sqlite). Writes are atomic; the file is untouched
-when validation fails. No file locking — do not point it at a document that is
-open in the desktop app while it saves.
+Options: --server-json <path> (or MYWB_SERVER_JSON) overrides where \`app\`
+commands look for the running app's server.json.
+
+Requires Node >= 22.5 (node:sqlite). \`file\` writes are atomic; the file is
+untouched when validation fails. No file locking — do not \`file apply\` a
+document that is open in the desktop app while it saves.
 `
 
 function usageExit(code: number): never {
@@ -29,7 +38,8 @@ async function main(): Promise<void> {
 		args: process.argv.slice(2),
 		options: {
 			json: { type: 'boolean', default: false },
-			help: { type: 'boolean', default: false }
+			help: { type: 'boolean', default: false },
+			'server-json': { type: 'string' }
 		},
 		allowPositionals: true
 	})
@@ -37,16 +47,36 @@ async function main(): Promise<void> {
 	if (values.help || positionals.length === 0) usageExit(values.help ? 0 : 2)
 
 	const [ns, command, ...rest] = positionals
-	if (ns !== 'file') usageExit(2)
 
-	if (command === 'read' && rest.length === 1) {
-		await runFileRead(rest[0], values.json)
-		return
+	if (ns === 'file') {
+		if (command === 'read' && rest.length === 1) {
+			await runFileRead(rest[0], values.json)
+			return
+		}
+		if (command === 'apply' && rest.length === 2) {
+			await runFileApply(rest[0], rest[1])
+			return
+		}
+		usageExit(2)
 	}
-	if (command === 'apply' && rest.length === 2) {
-		await runFileApply(rest[0], rest[1])
-		return
+
+	if (ns === 'app') {
+		const serverJson = values['server-json']
+		if (command === 'docs' && rest.length === 0) {
+			await runAppDocs(serverJson)
+			return
+		}
+		if (command === 'search' && rest.length <= 1) {
+			await runAppSearch(rest[0], serverJson)
+			return
+		}
+		if (command === 'exec' && rest.length >= 1 && rest.length <= 2) {
+			await runAppExec(rest[0], rest[1], serverJson)
+			return
+		}
+		usageExit(2)
 	}
+
 	usageExit(2)
 }
 

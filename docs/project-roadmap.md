@@ -47,12 +47,23 @@ download), Open/Save/Save As, relay server nhỏ (WebSocket + token) cho agent
 **read-only** (list/search/get — KHÔNG exec). Format `.mywb` bất biến: round-trip
 desktop↔web trên cùng file là acceptance cứng.
 
-## Stage 2c — Exec-remote + script sandbox trên web (next)
+## Dogfood + agent integration: `mywb app` live-mode (next)
+
+Quyết định 2026-07-19 (idea triage, brainstorm
+`plans/reports/brainstorm-260719-1906-dogfood-and-mywb-live-mode-report.md`):
+sau 4 stage build liên tục, thứ thiếu nhất là **bằng chứng usage** — không phải
+feature. Track 1 (usage): vẽ board kiến trúc repo này bằng chính app qua agent,
+commit `docs/architecture.mywb`, drift-check chạy local (CI khi có remote),
+backlog pain thật. Track 2 (build): `mywb app docs/search/exec` — CLI live-mode
+nói với app đang chạy (port từ helper script), một binary cho mọi agent có
+shell + CI. **CLI trước, MCP sau**: `mywb mcp` là proxy stdio mỏng trên CLI,
+build hay không do dogfood quyết.
+
+## Stage 2c — Exec-remote + script sandbox trên web (ứng viên, demote 2026-07-19)
 
 Gateway exec (agent chạy code trên canvas web qua relay) + script sandbox
-(iframe/worker) cho document scripts không tin cậy. Tách khỏi 2b vì exec-remote
-trên web là bài bảo mật nặng (RCE thật nếu sai — desktop an toàn nhờ localhost +
-cùng máy, web thì không).
+(iframe/worker). Demote vì web chưa có usage thật để justify cost bảo mật
+RCE-remote; cân nhắc lại sau khi web có người dùng.
 
 ## Stage 3 — Team / collab (ứng viên)
 
