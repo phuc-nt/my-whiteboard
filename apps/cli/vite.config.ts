@@ -19,10 +19,15 @@ export default defineConfig({
 				cli: 'src/cli.ts',
 				'make-fixture': 'src/make-fixture.ts'
 			},
+			// The MCP SDK relies on subpath exports that don't survive bundling, so
+			// keep it external and resolve from node_modules at runtime (declared as
+			// a runtime dep of this package).
+			external: [/^@modelcontextprotocol\//]
 		}
 	},
 	ssr: {
-		// Bundle every dependency (tldraw, @mywb TS sources, yauzl, zod, ...).
+		// Bundle every other dependency (tldraw, @mywb TS sources, yauzl, zod, ...)
+		// so the dist is self-contained.
 		noExternal: true
 	}
 })

@@ -5,6 +5,7 @@ import { parseArgs } from 'node:util'
 import { runAppDocs, runAppExec, runAppSearch } from './app-commands'
 import { runFileApply } from './file-apply-command'
 import { runFileRead } from './file-read-command'
+import { startMcpServer } from './mcp/mcp-server'
 
 // Companion CLI to the desktop app. `file` works on .mywb files headlessly;
 // `app` talks to the RUNNING desktop app over its localhost agent API.
@@ -20,6 +21,8 @@ const USAGE = `Usage:
   mywb app search [<js>|-]              Run read-only JS in the app's search context
                                         (api.getDocs/getShapes/...); code from arg or stdin
   mywb app exec <documentId> [<js>|-]   Run JS against the live editor of an open document
+  mywb mcp                              Run a stdio MCP server exposing the app's
+                                        canvas as tools (add with: claude mcp add)
   mywb --help                           Show this help
 
 Options: --server-json <path> (or MYWB_SERVER_JSON) overrides where \`app\`
@@ -49,6 +52,13 @@ async function main(): Promise<void> {
 	if (values.help || positionals.length === 0) usageExit(values.help ? 0 : 2)
 
 	const [ns, command, ...rest] = positionals
+
+	if (ns === 'mcp') {
+		// Long-lived stdio MCP server — blocks here until the client disconnects,
+		// then falls through to the normal process.exit(0).
+		await startMcpServer()
+		return
+	}
 
 	if (ns === 'file') {
 		if (command === 'read' && rest.length === 1) {

@@ -47,6 +47,18 @@ download), Open/Save/Save As, relay server nhỏ (WebSocket + token) cho agent
 **read-only** (list/search/get — KHÔNG exec). Format `.mywb` bất biến: round-trip
 desktop↔web trên cùng file là acceptance cứng.
 
+## `mywb mcp` — MCP server over the Agent API (next)
+
+Quyết định 2026-07-20 (brainstorm
+`plans/reports/brainstorm-260720-0309-mywb-mcp-server-report.md`): sau khi
+`mywb app` live-mode chạy, bước giá trị-user rõ nhất là để MỌI agent hiểu MCP
+connect canvas qua chuẩn (`claude mcp add mywb`) — tools có schema tự động,
+không cần học cú pháp CLI/skill. `mywb mcp` là subcommand stdio server trong
+apps/cli, tái dùng app-server-client (server.json + token), SDK
+`@modelcontextprotocol/sdk`. Tools v1: list_documents, read_shapes,
+read_bindings, screenshot, exec. Chọn trước Stage 2c vì web chưa có usage thật
+để justify cost exec-remote.
+
 ## Dogfood backlog fixes ✅ (done 2026-07-19)
 
 6 pain từ phiên dogfood đầu, mỗi cái test đầy đủ (plan
