@@ -1,0 +1,30 @@
+{
+	"name": "my-whiteboard-cli",
+	"version": "0.1.0",
+	"description": "Headless CLI for .mywb documents: read and apply record-level changes without the desktop app",
+	"type": "module",
+	"private": true,
+	"bin": {
+		"mywb": "./dist/cli.js"
+	},
+	"scripts": {
+		"build": "vite build",
+		"typecheck": "tsc --noEmit",
+		"test": "vite build && vitest run"
+	},
+	"dependencies": {
+		"@mywb/core": "*",
+		"@mywb/node-adapter": "*",
+		"react": "^19.2.7",
+		"react-dom": "^19.2.7",
+		"tldraw": "5.2.5",
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"@types/node": "^25.0.0",
+		"@types/react": "^19.0.0",
+		"typescript": "^5.9.0",
+		"vite": "^7.0.0",
+		"vitest": "^4.1.10"
+	}
+}
