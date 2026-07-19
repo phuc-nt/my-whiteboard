@@ -11,7 +11,10 @@ files. See [docs/product-positioning-abstract.md](docs/product-positioning-abstr
 ## Develop
 
 npm workspaces monorepo: `packages/core` (`@mywb/core`, environment-agnostic
-core), `apps/desktop` (Electron adapter), `apps/web-smoke` (browser proof).
+core), `packages/node-adapter` (archive/sqlite + headless document access),
+`apps/desktop` (Electron adapter), `apps/cli` (headless `mywb` CLI),
+`apps/web-smoke` (browser proof). CI drift-check template:
+[examples/ci-drift-check/](examples/ci-drift-check/).
 
 ```bash
 npm install

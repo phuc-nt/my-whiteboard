@@ -1,0 +1,23 @@
+{
+	"documentId": "sample-architecture",
+	"serviceNodes": [
+		{
+			"name": "checkout-api",
+			"kind": "api",
+			"repoUrl": "https://github.com/acme/checkout-api",
+			"ownerTeam": "payments"
+		},
+		{
+			"name": "orders-db",
+			"kind": "db",
+			"repoUrl": "",
+			"ownerTeam": "payments"
+		},
+		{
+			"name": "legacy-mailer",
+			"kind": "cron",
+			"repoUrl": "https://github.com/acme/legacy-mailer",
+			"ownerTeam": "growth"
+		}
+	]
+}

@@ -101,9 +101,16 @@ no `electron`, no `node:*`, no `window.desktop` in core — is enforced by an
 automated test gate, and `apps/web-smoke` proves the core mounts, execs, and
 syncs in a plain browser.
 
-- **Desktop adapter** (`apps/desktop/src/main/*`): file system, `node:sqlite`
-  (`RecordsDatabase implements RecordStore`), localhost HTTP server, custom
-  protocols, `fs.watch`; the renderer wires core over the IPC transport.
+- **Node adapter** (`packages/node-adapter`, Stage 2a): the `.mywb` archive +
+  sqlite stack shared by desktop and headless tools, plus headless document
+  access (read / validated record-level apply — validation runs the app's own
+  store schema, so a change is accepted iff the canvas would accept it). The
+  `mywb` CLI (`apps/cli`) and the CI drift-check example
+  (`examples/ci-drift-check/`) sit on top: cloud agents read/update diagrams
+  as data, no canvas or server needed.
+- **Desktop adapter** (`apps/desktop/src/main/*`): file system, localhost HTTP
+  server, custom protocols, `fs.watch`; archive/sqlite now comes from the node
+  adapter; the renderer wires core over the IPC transport.
 - **Web adapter** (future, Stage 2): OPFS / File System Access, WASM sqlite or a
   backend store, WebSocket sync, an Agent Gateway relaying agent↔canvas
   (browsers can't host a localhost server), and a script sandbox (iframe/worker

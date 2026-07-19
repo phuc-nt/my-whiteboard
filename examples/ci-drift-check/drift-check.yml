@@ -1,0 +1,46 @@
+# Diagram drift check — sample workflow.
+# Copy into .github/workflows/ of a repo that keeps a .mywb architecture
+# diagram, adjust BOARD_PATH and the agent step, done.
+#
+# Requires Node >= 22.5 (node:sqlite). The CLI is record-level and does no file
+# locking — CI only ever reads a committed file, so that is fine here.
+
+name: diagram-drift-check
+on: pull_request
+
+env:
+  BOARD_PATH: docs/architecture.mywb
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # In the my-whiteboard monorepo the CLI builds from source. In your own
+      # repo, install/vendor the built dist instead.
+      - run: npm ci
+      - run: npm run build -w apps/cli
+
+      - name: Export diagram as JSON
+        run: node apps/cli/dist/cli.js file read "$BOARD_PATH" --json > diagram.json
+
+      # Agent step — any coding agent works; the intelligence lives in
+      # SKILL.md, not in this workflow. Example with Claude Code:
+      #
+      # - name: Drift check
+      #   env:
+      #     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      #   run: |
+      #     claude -p "Follow examples/ci-drift-check/SKILL.md. Compare \
+      #       diagram.json against this repository's source tree and post a \
+      #       drift report as a PR comment (gh pr comment)." \
+      #       --allowedTools "Bash,Read,Grep,Glob"
+      - name: Drift check (wire your agent here)
+        run: |
+          echo "diagram.json is ready for your agent — see examples/ci-drift-check/README.md"
+          head -c 400 diagram.json

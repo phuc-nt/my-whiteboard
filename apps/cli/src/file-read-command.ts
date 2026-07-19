@@ -1,4 +1,5 @@
 import { readMywbDocument } from '@mywb/node-adapter/headless-document'
+import { writeStdout } from './write-stdout'
 
 // `mywb file read <path> [--json]` — data access for agents: full JSON on
 // stdout with --json, otherwise a short human summary.
@@ -7,7 +8,7 @@ export async function runFileRead(filePath: string, asJson: boolean): Promise<vo
 	const doc = await readMywbDocument(filePath)
 
 	if (asJson) {
-		process.stdout.write(
+		await writeStdout(
 			JSON.stringify(
 				{
 					metadata: doc.metadata,
@@ -33,5 +34,5 @@ export async function runFileRead(filePath: string, asJson: boolean): Promise<vo
 		`document: ${doc.metadata.documentId}`,
 		...[...counts.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([t, n]) => `${t}: ${n}`)
 	]
-	process.stdout.write(lines.join('\n') + '\n')
+	await writeStdout(lines.join('\n') + '\n')
 }

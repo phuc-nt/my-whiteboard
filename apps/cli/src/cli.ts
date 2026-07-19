@@ -50,7 +50,15 @@ async function main(): Promise<void> {
 	usageExit(2)
 }
 
-main().catch((error: unknown) => {
-	process.stderr.write(`mywb: ${error instanceof Error ? error.message : String(error)}\n`)
-	process.exit(1)
-})
+main().then(
+	() => {
+		// Importing tldraw keeps a live timer in the event loop outside
+		// NODE_ENV=test — a finished CLI must exit explicitly. stdout writes in
+		// the commands are awaited, so nothing is truncated here.
+		process.exit(0)
+	},
+	(error: unknown) => {
+		process.stderr.write(`mywb: ${error instanceof Error ? error.message : String(error)}\n`)
+		process.exit(1)
+	}
+)

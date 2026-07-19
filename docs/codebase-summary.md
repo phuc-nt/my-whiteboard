@@ -6,6 +6,14 @@ by concern with descriptive kebab-case names.
 ## Layout
 
 ```
+packages/node-adapter/       # @mywb/node-adapter — Node-only shared code (no electron)
+└── src/
+    ├── archive/               # .mywb zip reader/writer + RecordsDatabase (node:sqlite,
+    │                          #   implements core RecordStore) — used by desktop AND headless tools
+    └── headless-document/     # read/applyRecordChanges/save on .mywb without the app;
+                               #   validation = headless TLStore with the app's shape schemas;
+                               #   fixture-builder for tests and examples
+
 packages/core/               # @mywb/core — environment-agnostic (no electron, no node:*)
 └── src/
     ├── format/                # .mywb zod schemas, SerializedRecord, archive entry names
@@ -28,6 +36,13 @@ apps/desktop/                # Electron adapter (electron-vite + React)
 └── e2e/                       # Playwright + Electron suite (agent API, shapes, scripts)
 
 apps/web-smoke/              # Proof consumer: core in a plain browser (vite + chrome test)
+
+apps/cli/                    # my-whiteboard-cli — bin `mywb` (self-contained dist via vite SSR)
+                             #   `mywb file read <p> [--json]`, `mywb file apply <p> <changes.json>`
+                             #   + dist/make-fixture.js for sample boards
+
+examples/ci-drift-check/     # GitHub Action template + SKILL.md: agent reads the diagram via
+                             #   the CLI and compares it with the code (drift-as-review)
 ```
 
 ## Key contracts
@@ -71,3 +86,8 @@ apps/web-smoke/              # Proof consumer: core in a plain browser (vite + c
 - `"type": "module"` — preload is forced to CJS; `@tldraw/assets` is excluded
   from dep optimizers in both vite configs.
 - DMG output: `apps/desktop/release/`.
+- Importing tldraw keeps a live timer in the Node event loop outside
+  `NODE_ENV=test` — CLIs must `process.exit()` explicitly when done (with
+  awaited stdout writes so pipes are flushed).
+- `apps/cli` requires Node ≥ 22.5 (`node:sqlite`); its dist bundles everything
+  except node builtins, so `node dist/cli.js` runs on a bare runner.
