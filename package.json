@@ -6,7 +6,8 @@
 	"private": true,
 	"workspaces": [
 		"packages/*",
-		"apps/*"
+		"apps/*",
+		"services/*"
 	],
 	"scripts": {
 		"dev": "npm run dev -w apps/desktop",

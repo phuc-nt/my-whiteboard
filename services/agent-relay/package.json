@@ -1,0 +1,24 @@
+{
+	"name": "my-whiteboard-agent-relay",
+	"version": "0.1.0",
+	"description": "Read-only relay between a coding agent and a My Whiteboard web tab: forwards read requests, never executes code",
+	"type": "module",
+	"private": true,
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"@mywb/core": "*",
+		"ws": "^8.18.0"
+	},
+	"devDependencies": {
+		"@types/node": "^25.0.0",
+		"@types/ws": "^8.5.13",
+		"typescript": "^5.9.0",
+		"vitest": "^4.1.10"
+	}
+}

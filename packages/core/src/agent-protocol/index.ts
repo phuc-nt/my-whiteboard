@@ -9,3 +9,12 @@ export {
 	serverInfoSchema
 } from './agent-protocol'
 export type { ApiResultEnvelope, ExecResult, ServerInfo } from './agent-protocol'
+export { readRequestSchema } from './read-protocol'
+export type {
+	ReadReply,
+	ReadRequest,
+	RelayFrame,
+	RelayRegisterFrame,
+	RelayReplyFrame,
+	RelayRequestFrame
+} from './read-protocol'
