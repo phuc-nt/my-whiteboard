@@ -53,8 +53,10 @@ const CARD_PADDING = 10
 const HEADER_HEIGHT = 22
 const ROW_HEIGHT = 18
 const NAME_LINE_HEIGHT = 20
-// Rough chars-per-line: name font is ~15px, badge eats some header width.
-const NAME_CHARS_PER_100PX = 11
+// Rough chars-per-line for the name: ~15px font, and the kind badge (~86px)
+// eats the start of the header row, leaving less width than the full card.
+const HEADER_BADGE_WIDTH = 86
+const NAME_CHARS_PER_100PX = 13
 
 /**
  * Minimum height that shows all of a service-node's content without clipping.
@@ -67,7 +69,10 @@ export function computeServiceNodeMinHeight(props: {
 	repoUrl: string
 	ownerTeam: string
 }): number {
-	const charsPerLine = Math.max(6, Math.floor((props.w / 100) * NAME_CHARS_PER_100PX))
+	// The name shares the header row with the badge, so its usable width is the
+	// card width minus the badge and padding.
+	const nameWidth = Math.max(60, props.w - CARD_PADDING * 2 - HEADER_BADGE_WIDTH)
+	const charsPerLine = Math.max(6, Math.floor((nameWidth / 100) * NAME_CHARS_PER_100PX))
 	const nameLines = Math.max(1, Math.ceil(props.name.length / charsPerLine))
 	let height = CARD_PADDING * 2
 	// Header row grows with wrapped name lines beyond the first.
@@ -128,9 +133,10 @@ export class ServiceNodeShapeUtil extends ShapeUtil<ServiceNodeShape> {
 					fontFamily: 'var(--tl-font-sans, sans-serif)'
 				}}
 			>
-				<div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+				<div style={{ display: 'flex', alignItems: 'flex-start', gap: 6 }}>
 					<span
 						style={{
+							flexShrink: 0,
 							fontSize: 10,
 							fontWeight: 700,
 							color: '#fff',
@@ -138,12 +144,24 @@ export class ServiceNodeShapeUtil extends ShapeUtil<ServiceNodeShape> {
 							borderRadius: 4,
 							padding: '1px 6px',
 							textTransform: 'uppercase',
-							letterSpacing: 0.5
+							letterSpacing: 0.5,
+							// Nudge the badge down to align with the first text line.
+							marginTop: 2
 						}}
 					>
 						{KIND_LABEL[kind]}
 					</span>
-					<span style={{ fontWeight: 600, fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+					{/* Wraps to as many lines as needed — computeServiceNodeMinHeight
+					    budgets the card height for exactly this. */}
+					<span
+						style={{
+							fontWeight: 600,
+							fontSize: 15,
+							minWidth: 0,
+							whiteSpace: 'normal',
+							wordBreak: 'break-word'
+						}}
+					>
 						{name}
 					</span>
 				</div>

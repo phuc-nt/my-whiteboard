@@ -47,6 +47,14 @@ download), Open/Save/Save As, relay server nhỏ (WebSocket + token) cho agent
 **read-only** (list/search/get — KHÔNG exec). Format `.mywb` bất biến: round-trip
 desktop↔web trên cùng file là acceptance cứng.
 
+## Dogfood backlog fixes ✅ (done 2026-07-19)
+
+6 pain từ phiên dogfood đầu, mỗi cái test đầy đủ (plan
+`plans/260719-2058-dogfood-backlog-six-pain-fixes/`): service-node kind
+lib/app/tool + card auto-height; layoutGrid/layoutTree helpers cho agent;
+arrow meta.relation convention; save dialog nhớ thư mục + gợi ý tên từ board;
+CLI im lặng sqlite warning.
+
 ## Dogfood + agent integration: `mywb app` live-mode ✅ (done 2026-07-19)
 
 Quyết định 2026-07-19 (idea triage, brainstorm
