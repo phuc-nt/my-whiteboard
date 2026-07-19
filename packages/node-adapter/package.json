@@ -5,7 +5,8 @@
 	"type": "module",
 	"private": true,
 	"exports": {
-		"./archive": "./src/archive/index.ts"
+		"./archive": "./src/archive/index.ts",
+		"./headless-document": "./src/headless-document/index.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit",
@@ -14,12 +15,22 @@
 	"dependencies": {
 		"@mywb/core": "*",
 		"yauzl": "^3.4.0",
-		"yazl": "^3.3.1"
+		"yazl": "^3.3.1",
+		"zod": "^4.4.3"
+	},
+	"peerDependencies": {
+		"react": "^19.2.7",
+		"react-dom": "^19.2.7",
+		"tldraw": "5.2.5"
 	},
 	"devDependencies": {
 		"@types/node": "^25.0.0",
+		"@types/react": "^19.0.0",
 		"@types/yauzl": "^3.4.0",
 		"@types/yazl": "^3.3.1",
+		"react": "^19.2.7",
+		"react-dom": "^19.2.7",
+		"tldraw": "5.2.5",
 		"typescript": "^5.9.0",
 		"vitest": "^4.1.10"
 	}
