@@ -58,6 +58,15 @@ export function describeRecordStoreContract(name: string, factory: () => RecordS
 			store.close()
 		})
 
+		it('loadAllRecords results are safe to mutate (no shared references)', () => {
+			const store = factory()
+			store.applyDiff([{ id: 'a', typeName: 'shape', json: '{"v":1}' }], [])
+			const first = store.loadAllRecords()
+			first[0].json = 'tampered'
+			expect(store.loadAllRecords()).toEqual([{ id: 'a', typeName: 'shape', json: '{"v":1}' }])
+			store.close()
+		})
+
 		it('throws on use after close', () => {
 			const store = factory()
 			store.close()

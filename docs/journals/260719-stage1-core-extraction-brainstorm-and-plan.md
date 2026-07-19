@@ -16,6 +16,18 @@ MVP (Stage 0) hoàn tất hôm nay (7 phases, commits fca8d2c→f1ed6ff). Địn
 - Verification pass của validate bắt được đúng loại lỗi nguy hiểm: interface "nghe hợp lý" viết từ trí nhớ thay vì đọc file thật. Phase 5 giờ ghi API đã verify.
 - Ranh giới core thực tế không phải "no-DOM" — shapes/sync cần DOM types qua tldraw/React; ranh giới cứng đúng là cấm `electron`/`node:*`. Ghi thẳng vào plan tránh tranh cãi lúc review.
 
+## Thực thi (cùng ngày, /mk:cook)
+
+Cả 6 phases hoàn thành trong 7 commits (da67a39..HEAD), mỗi phase xanh typecheck + unit + e2e trước khi sang phase sau. Kết quả: monorepo `packages/core` + `apps/desktop` + `apps/web-smoke`; core 35 unit tests (Node thuần), desktop 25 unit + 10 e2e Electron, web-smoke 1 playwright (chrome channel), DMG build OK, tldraw 1 bản.
+
+Vấp đáng ghi:
+- electron-builder không resolve version electron dạng range khi bị workspace hoisting → pin `electronVersion` trong electron-builder.yml.
+- Boundary gate v1 KHÔNG bắt được `import 'node:fs'` (side-effect import, thiếu `from`) — phát hiện nhờ bước "chứng minh gate bắt lỗi thật" trong plan. Bài học: gate chưa từng thấy đỏ là gate chưa được kiểm chứng.
+- tldraw store deliver history cho `store.listen` theo animation frame trong browser — web-smoke phải đợi 1 frame trước khi flush+đọc; unit test Node không lộ điều này (fallback sync). Đã ghi vào codebase-summary làm gotcha.
+- `getSnapshot()` cấp editor đòi session state; đổi sang `store.getStoreSnapshot('document')` — tương đương phần document, chạy được headless (reviewer xác nhận qua source tldraw).
+
+Code review (subagent): DONE, 0 chặn, 3 minor → fix 2 (defensive copy MemoryRecordStore + contract test; regex bracket-access), 1 documented (cần system Chrome cho e2e:web).
+
 ## Trạng thái
 
-Plan validated, Failed=0 sau sửa, active plan đã set. Sẵn sàng `/mk:cook` (khuyến nghị `/clear` trước để context sạch).
+Stage 1 HOÀN THÀNH — plan completed, roadmap cập nhật, docs khớp layout mới. Stage 2 (web target) là ứng viên kế tiếp, bắt đầu bằng brainstorm phạm vi Agent Gateway.

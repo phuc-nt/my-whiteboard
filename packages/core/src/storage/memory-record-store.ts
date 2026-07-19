@@ -16,20 +16,22 @@ export class MemoryRecordStore implements RecordStore {
 
 	applyDiff(put: SerializedRecord[], removed: string[]): void {
 		this.#assertOpen()
-		for (const record of put) this.#records.set(record.id, record)
+		// Copy on write/read so callers can't mutate stored state through shared
+		// references — matches sqlite, which materializes fresh rows per query.
+		for (const record of put) this.#records.set(record.id, { ...record })
 		for (const id of removed) this.#records.delete(id)
 	}
 
 	replaceAll(records: SerializedRecord[], schemaJson: string): void {
 		this.#assertOpen()
 		this.#records.clear()
-		for (const record of records) this.#records.set(record.id, record)
+		for (const record of records) this.#records.set(record.id, { ...record })
 		this.#schemaJson = schemaJson
 	}
 
 	loadAllRecords(): SerializedRecord[] {
 		this.#assertOpen()
-		return [...this.#records.values()]
+		return [...this.#records.values()].map((record) => ({ ...record }))
 	}
 
 	getSchemaJson(): string | null {

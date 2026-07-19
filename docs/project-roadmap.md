@@ -14,17 +14,15 @@ Plan: [plans/260719-0904-my-whiteboard-mvp-local-first/](../plans/260719-0904-my
 Còn nợ trong stage này (không chặn): manual GUI pass (save dialog / recovery /
 consent-reopen), xác nhận license tldraw, signing/notarization.
 
-## Stage 1 — Tách core (next)
+## Stage 1 — Tách core ✅ (done 2026-07-19)
 
-Trích phần logic không phụ thuộc môi trường ra **shared core** (npm package,
-không import Electron/browser API): shape schemas + validation, `.mywb` format,
-agent-exec semantics (protocol + serialize), document-script runtime,
-document-sync (diff/snapshot). Desktop app trở thành **adapter** đầu tiên tiêu
-thụ core. Refactor có kiểm soát — không viết lại, hành vi giữ nguyên, e2e hiện
-có là lưới an toàn.
-
-Phạm vi chi tiết, thứ tự tách, và cấu trúc package: chốt qua brainstorm + plan
-của stage (xem `plans/`).
+Monorepo npm workspaces: `packages/core` (`@mywb/core` — format, agent-protocol,
+shapes, sync sau `SyncTransport`, exec, script-runtime, `RecordStore` contract
++ in-memory impl), `apps/desktop` (adapter Electron, `RecordsDatabase
+implements RecordStore`), `apps/web-smoke` (proof core chạy browser thuần, có
+playwright test). Boundary cấm `electron`/`node:*`/`window.desktop` trong core
+enforce bằng test gate. Behavior desktop không đổi — toàn bộ unit + e2e cũ pass.
+Plan: [plans/260719-1302-stage1-core-extraction-monorepo/](../plans/260719-1302-stage1-core-extraction-monorepo/plan.md).
 
 ## Stage 2 — Web target (ứng viên, sau Stage 1)
 

@@ -23,7 +23,8 @@ const FORBIDDEN = [
 	/from\s+['"]node:/,
 	/import\s*\(?\s*['"]node:/,
 	/require\(\s*['"]node:/,
-	/window\.desktop/
+	/window\.desktop/,
+	/window\[\s*['"]desktop['"]\s*\]/
 ]
 
 describe('core boundary', () => {
