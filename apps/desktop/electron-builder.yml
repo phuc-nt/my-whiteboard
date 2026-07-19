@@ -1,5 +1,8 @@
 appId: com.mywhiteboard.app
 productName: My Whiteboard
+# Workspace hoisting keeps electron in the root node_modules where builder's
+# range resolution can't see it — pin the version explicitly.
+electronVersion: 43.1.1
 directories:
   output: release
   buildResources: build

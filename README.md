@@ -16,7 +16,7 @@ npm run dev        # launch the app in dev
 npm run typecheck  # tsc (main + renderer)
 npm test           # vitest unit tests
 npm run e2e        # build + Playwright Electron e2e
-npm run build:mac  # unsigned universal macOS DMG → release/
+npm run build:mac  # unsigned universal macOS DMG → apps/desktop/release/
 ```
 
 > On a shell that exports `ELECTRON_RUN_AS_NODE=1`, prefix run commands with
