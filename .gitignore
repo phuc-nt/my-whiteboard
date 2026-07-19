@@ -1,0 +1,29 @@
+# Dependencies & build output
+node_modules/
+out/
+dist/
+*.log
+*.tsbuildinfo
+
+# OS
+.DS_Store
+
+# MyKit tooling & internal planning (not part of app source)
+.claude/
+CLAUDE.md
+plans/
+
+# Secrets & credentials — never commit
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+.npmrc
+credentials.json
+service-account*.json
+
+# Test artifacts (Phase 6)
+test-results/
+.playwright-results/
