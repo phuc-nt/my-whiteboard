@@ -4,7 +4,12 @@ import { chmodSync, unlinkSync, writeFileSync } from 'fs'
 import type { IncomingMessage, Server, ServerResponse } from 'http'
 import { createServer } from 'http'
 import { join } from 'path'
-import { DocumentNotFoundError, execInDocument } from './agent-server-registry'
+import {
+	DocumentNotFoundError,
+	execInDocument,
+	getScriptStatusForDocument,
+	openScriptWorkspaceForDocument
+} from './agent-server-registry'
 import { getAgentApiReadme } from './agent-api-readme'
 import { appendRequestLog, getRequestLogPath } from './request-log-writer'
 import { runSearchCode } from './search-api-context'
@@ -164,6 +169,18 @@ export class AgentApiServer {
 			return
 		}
 
+		const workspaceMatch = pathname.match(/^\/api\/doc\/([^/]+)\/script-workspace$/)
+		if (req.method === 'POST' && workspaceMatch) {
+			await this.#handleScriptWorkspace(res, decodeURIComponent(workspaceMatch[1]))
+			return
+		}
+
+		const statusMatch = pathname.match(/^\/api\/doc\/([^/]+)\/script-status$/)
+		if (req.method === 'GET' && statusMatch) {
+			this.#handleScriptStatus(res, decodeURIComponent(statusMatch[1]))
+			return
+		}
+
 		this.#sendJson(res, 404, { error: 'Not found' })
 	}
 
@@ -213,6 +230,32 @@ export class AgentApiServer {
 		try {
 			const result = await execInDocument(documentId, parsed.code)
 			this.#sendJson(res, 200, result)
+		} catch (error) {
+			const status = error instanceof DocumentNotFoundError ? 404 : 500
+			this.#sendJson(res, status, {
+				success: false,
+				error: error instanceof Error ? error.message : String(error)
+			})
+		}
+	}
+
+	async #handleScriptWorkspace(res: ServerResponse, documentId: string): Promise<void> {
+		void appendRequestLog({ endpoint: `/api/doc/${documentId}/script-workspace` })
+		try {
+			const workspace = await openScriptWorkspaceForDocument(documentId)
+			this.#sendJson(res, 200, { success: true, result: workspace })
+		} catch (error) {
+			const status = error instanceof DocumentNotFoundError ? 404 : 500
+			this.#sendJson(res, status, {
+				success: false,
+				error: error instanceof Error ? error.message : String(error)
+			})
+		}
+	}
+
+	#handleScriptStatus(res: ServerResponse, documentId: string): void {
+		try {
+			this.#sendJson(res, 200, { success: true, result: getScriptStatusForDocument(documentId) })
 		} catch (error) {
 			const status = error instanceof DocumentNotFoundError ? 404 : 500
 			this.#sendJson(res, status, {

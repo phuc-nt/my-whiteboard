@@ -16,6 +16,13 @@ import {
 	installAssetProtocolHandler,
 	registerAppSchemePrivileges
 } from './app-protocols'
+import {
+	attachDocumentScripts,
+	detachDocumentScripts,
+	runNow
+} from './document-scripts/document-script-coordinator'
+import { computeScriptDigest, isDigestTrusted, trustDigest } from './document-scripts/script-trust-store'
+import { ARCHIVE_SCRIPT_DIR } from '../shared/mywb-format-types'
 import { confirmCloseDirtyWindow, newDocument, openDocumentFromPath } from './document-actions'
 import { installApplicationMenu } from './menu-manager'
 import {
@@ -80,6 +87,46 @@ function detachFailedDocument(state: WindowState, error: unknown): void {
 	})
 }
 
+/**
+ * On opening a document that carries a script, run it if already trusted;
+ * otherwise ask for consent (keyed on the exact script digest). A test hook
+ * (MYWB_E2E_AUTO_CONSENT=approve|deny) bypasses the native dialog under test.
+ */
+async function maybeRunTrustedScriptOnOpen(
+	documentId: string,
+	workingCopyDir: string,
+	window: BrowserWindow
+): Promise<void> {
+	const digest = await computeScriptDigest(workingCopyDir)
+	if (!digest) return
+	if (await isDigestTrusted(digest)) {
+		await runNow(documentId)
+		return
+	}
+
+	let approved: boolean
+	const testConsent = process.env.MYWB_E2E_AUTO_CONSENT
+	if (testConsent === 'approve') approved = true
+	else if (testConsent === 'deny') approved = false
+	else {
+		const { response } = await dialog.showMessageBox(window, {
+			type: 'warning',
+			message: 'This document contains a script.',
+			detail:
+				'Scripts embedded in a document can read and change its contents and run code on your computer. Only run scripts from documents you trust.',
+			buttons: ['Run Script', "Don't Run"],
+			defaultId: 1,
+			cancelId: 1
+		})
+		approved = response === 0
+	}
+
+	if (approved) {
+		await trustDigest(digest)
+		await runNow(documentId)
+	}
+}
+
 function registerIpcHandlers(): void {
 	ipcMain.handle(RendererToMain.docLoad, async (event): Promise<DocLoadResult> => {
 		const state = stateForSender(event)
@@ -87,10 +134,15 @@ function registerIpcHandlers(): void {
 		try {
 			// New windows get their working copy lazily on first load.
 			state.workingCopy ??= await WorkingCopy.createNew()
-			return {
+			const result = {
 				filePath: state.filePath,
 				documentJson: state.workingCopy.loadSnapshotJson()
 			}
+			// Wire document scripts now that the working copy exists. A script
+			// arriving inside an opened file needs consent before it runs.
+			attachDocumentScripts(state.workingCopy.documentId, state.window, state.workingCopy.dir)
+			void maybeRunTrustedScriptOnOpen(state.workingCopy.documentId, state.workingCopy.dir, state.window)
+			return result
 		} catch (error) {
 			detachFailedDocument(state, error)
 			return { filePath: null, documentJson: null }
@@ -236,6 +288,7 @@ app.whenReady().then(async () => {
 	setWindowClosedHandler((state) => {
 		const workingCopy = state.workingCopy
 		if (!workingCopy) return
+		detachDocumentScripts(workingCopy.documentId)
 		if (state.discarded) {
 			// Explicit Don't Save — never resurrect as recovery.
 			void workingCopy.dispose().catch((error) => console.error('Working copy cleanup failed:', error))
@@ -252,7 +305,16 @@ app.whenReady().then(async () => {
 		if (!quitting) void persistSession(false)
 	})
 
-	installAppProtocolHandler(join(import.meta.dirname, '../renderer'))
+	// Document scripts are served on the renderer's own origin (mywb-app://) so
+	// module imports aren't CORS-blocked. Trust is enforced here: a script whose
+	// current on-disk digest isn't trusted is never served, even if guessed.
+	installAppProtocolHandler(join(import.meta.dirname, '../renderer'), async (documentId, relativeFile) => {
+		const state = findWindowByDocumentId(documentId)
+		if (!state?.workingCopy) return null
+		const digest = await computeScriptDigest(state.workingCopy.dir)
+		if (!digest || !(await isDigestTrusted(digest))) return null
+		return join(state.workingCopy.dir, ARCHIVE_SCRIPT_DIR, relativeFile)
+	})
 	installAssetProtocolHandler((documentId, assetId) => {
 		const state = findWindowByDocumentId(documentId)
 		if (!state?.workingCopy) return null

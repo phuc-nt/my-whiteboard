@@ -1,5 +1,11 @@
 import type { BrowserWindow } from 'electron'
 import type { EditorSnapshotResult } from '../../shared/ipc-contract'
+import {
+	ensureWatching,
+	getScriptStatus,
+	type ScriptStatus
+} from '../document-scripts/document-script-coordinator'
+import { openScriptWorkspace, type ScriptWorkspace } from '../document-scripts/script-workspace-manager'
 import { invokeRenderer } from '../renderer-invoke'
 import type { WorkingCopy } from '../working-copy-manager'
 
@@ -120,4 +126,19 @@ export async function getDocumentScreenshot(documentId: string): Promise<string>
 export function getDocumentSnapshot(documentId: string): Promise<EditorSnapshotResult> {
 	const target = requireTarget(documentId)
 	return invokeRenderer<EditorSnapshotResult>(target.window, 'editor-get-snapshot')
+}
+
+/** Expose the document's live script/ dir for direct edits, and start watching. */
+export async function openScriptWorkspaceForDocument(documentId: string): Promise<
+	ScriptWorkspace & { filePath: string | null; name: string }
+> {
+	const target = requireTarget(documentId)
+	const workspace = await openScriptWorkspace(target.workingCopy.dir)
+	ensureWatching(documentId)
+	return { ...workspace, filePath: target.workingCopy.filePath, name: target.workingCopy.documentId }
+}
+
+export function getScriptStatusForDocument(documentId: string): ScriptStatus {
+	requireTarget(documentId)
+	return getScriptStatus(documentId)
 }

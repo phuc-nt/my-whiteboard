@@ -10,7 +10,9 @@ export const mywbMetadataSchema = z.object({
 	formatVersion: z.number().int().positive(),
 	appVersion: z.string(),
 	documentId: z.string().min(1),
-	createdAt: z.string()
+	createdAt: z.string(),
+	/** sha256 of the script/ dir at save time; absent when no script. */
+	scriptDigest: z.string().nullish()
 })
 export type MywbMetadata = z.infer<typeof mywbMetadataSchema>
 

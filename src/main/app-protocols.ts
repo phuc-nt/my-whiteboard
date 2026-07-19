@@ -1,5 +1,5 @@
 import { createReadStream } from 'fs'
-import { stat } from 'fs/promises'
+import { readFile, stat } from 'fs/promises'
 import { protocol } from 'electron'
 import { extname, join, normalize, sep } from 'path'
 import { Readable } from 'stream'
@@ -53,13 +53,35 @@ async function fileResponse(filePath: string): Promise<Response> {
 	})
 }
 
-/** Serve the built renderer directory (production only). */
-export function installAppProtocolHandler(rendererDir: string): void {
+/**
+ * resolveScriptPath maps (documentId, relativeFile) to a trusted script file
+ * path, or null. Document scripts are served from the SAME origin as the
+ * renderer (mywb-app://renderer/...) because Chromium only allows cross-origin
+ * module imports for http/https/data — a separate scheme would be CORS-blocked.
+ */
+type ScriptResolver = (documentId: string, relativeFile: string) => Promise<string | null>
+
+/** Serve the built renderer directory (production only) + document scripts. */
+export function installAppProtocolHandler(rendererDir: string, resolveScriptPath: ScriptResolver): void {
 	protocol.handle(APP_SCHEME, async (request) => {
 		try {
 			const url = new URL(request.url)
 			if (url.host !== 'renderer') return new Response('Not found', { status: 404 })
 			const requested = decodeURIComponent(url.pathname)
+
+			// Same-origin document scripts: mywb-app://renderer/__script__/<docId>/<digest>/<file>
+			const scriptMatch = requested.match(/^\/__script__\/([^/]+)\/[^/]+\/(.+)$/)
+			if (scriptMatch) {
+				const [, documentId, relativeFile] = scriptMatch
+				if (relativeFile.includes('..') || relativeFile.includes('\\')) {
+					return new Response('Forbidden', { status: 403 })
+				}
+				const filePath = await resolveScriptPath(documentId, relativeFile)
+				if (!filePath) return new Response('Not found or not trusted', { status: 404 })
+				const bytes = await readFile(filePath)
+				return new Response(bytes, { status: 200, headers: { 'content-type': 'text/javascript' } })
+			}
+
 			const relativePath = requested === '/' || requested === '' ? 'index.html' : requested.slice(1)
 			// URL paths are untrusted: never escape the renderer directory.
 			const destination = join(rendererDir, normalize(relativePath))
@@ -71,6 +93,11 @@ export function installAppProtocolHandler(rendererDir: string): void {
 			return new Response('Not found', { status: 404 })
 		}
 	})
+}
+
+/** URL for a document script, on the renderer's own origin (no CORS). */
+export function scriptUrl(documentId: string, digest: string, fileName: string): string {
+	return `${APP_SCHEME}://renderer/__script__/${documentId}/${digest}/${fileName}`
 }
 
 /**

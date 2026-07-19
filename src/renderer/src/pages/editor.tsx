@@ -7,6 +7,7 @@ import { runExecCode } from '../agent/exec-code-handler'
 import { documentAssetStore } from '../document-assets'
 import { startDocumentSync, captureFullSnapshot } from '../document-sync'
 import { deserializeDocument } from '../document-serialization'
+import { runDocumentScript, stopDocumentScript } from '../document-scripts/script-runtime'
 import { customShapeUtils } from '../shapes/custom-shapes-registry'
 
 // Full-window tldraw editor. On mount it pulls the window's document from the
@@ -30,6 +31,10 @@ export function EditorPage() {
 		// is loaded); snapshot/sync must wait for the document to load.
 		const offExec = window.desktop.onInvoke('exec-code', (payload) =>
 			runExecCode(editor, (payload as { code: string }).code)
+		)
+
+		const offRunScript = window.desktop.onInvoke('run-document-script', (payload) =>
+			runDocumentScript(editor, (payload as { scriptUrl: string }).scriptUrl)
 		)
 
 		window.desktop
@@ -61,6 +66,8 @@ export function EditorPage() {
 		cleanupRef.current = () => {
 			disposed = true
 			offExec()
+			offRunScript()
+			stopDocumentScript()
 			offSnapshot?.()
 			stopSync?.()
 		}

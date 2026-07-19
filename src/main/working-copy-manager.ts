@@ -11,6 +11,7 @@ import type {
 import {
 	ARCHIVE_ASSETS_DIR,
 	ARCHIVE_METADATA_FILE,
+	ARCHIVE_SCRIPT_DIR,
 	MYWB_FORMAT_VERSION,
 	WORKING_COPY_STATE_FILE,
 	workingCopyStateSchema
@@ -18,6 +19,7 @@ import {
 import { RecordsDatabase } from './archive/records-database'
 import { extractMywbArchive } from './archive/mywb-archive-reader'
 import { packDirectoryToMywbArchive } from './archive/mywb-archive-writer'
+import { computeScriptDigest } from './document-scripts/script-trust-store'
 
 // A working copy is the live, on-disk form of an open document:
 //   userData/working-copies/<documentId>/{metadata.json, db.sqlite, assets/, state.json}
@@ -88,6 +90,14 @@ export class WorkingCopy {
 			await mkdir(workingCopiesRoot(), { recursive: true })
 			await rename(tempDir, dir)
 			await mkdir(join(dir, ARCHIVE_ASSETS_DIR), { recursive: true })
+			// Tamper check: the script bytes on disk must match the digest the
+			// file was saved with. A mismatch means script/ was edited inside
+			// the archive by another tool — refuse to trust/run it.
+			const actualDigest = await computeScriptDigest(dir)
+			if ((metadata.scriptDigest ?? null) !== actualDigest) {
+				await rm(join(dir, ARCHIVE_SCRIPT_DIR), { recursive: true, force: true })
+				console.warn(`Script digest mismatch in ${archivePath}; script removed as untrusted.`)
+			}
 			const db = new RecordsDatabase(join(dir, 'db.sqlite'))
 			const copy = new WorkingCopy(metadata.documentId, dir, db, {
 				documentId: metadata.documentId,
@@ -148,6 +158,9 @@ export class WorkingCopy {
 		try {
 			this.db.replaceAll(snapshot.records, snapshot.schemaJson)
 			this.db.checkpoint()
+			// Stamp the current script digest into metadata so a post-save
+			// tamper (editing script/ inside the zip) is detectable on open.
+			await this.#writeScriptDigestToMetadata()
 			await packDirectoryToMywbArchive(this.dir, targetPath)
 			this.#state.filePath = targetPath
 			this.#state.dirty = false
@@ -194,6 +207,13 @@ export class WorkingCopy {
 			this.#state.dirty = true
 			await this.#persistState()
 		}
+	}
+
+	async #writeScriptDigestToMetadata(): Promise<void> {
+		const metadataPath = join(this.dir, ARCHIVE_METADATA_FILE)
+		const metadata = JSON.parse(await readFile(metadataPath, 'utf8'))
+		metadata.scriptDigest = await computeScriptDigest(this.dir)
+		await writeFile(metadataPath, JSON.stringify(metadata, null, '\t'))
 	}
 
 	async #persistState(): Promise<void> {
