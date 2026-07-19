@@ -40,14 +40,24 @@ export function invokeRenderer<T>(
 			pending.delete(id)
 			reject(new Error(`Renderer invoke "${channel}" timed out after ${INVOKE_TIMEOUT_MS}ms`))
 		}, INVOKE_TIMEOUT_MS)
+		// A window closed mid-invoke must fail fast, not hang callers (e.g.
+		// the save mutex) until the 30s timeout.
+		const onDestroyed = (): void => {
+			pending.delete(id)
+			clearTimeout(timer)
+			reject(new Error(`Renderer invoke "${channel}" aborted: window closed`))
+		}
+		window.once('closed', onDestroyed)
 		pending.set(id, {
 			senderId: window.webContents.id,
 			resolve: (value) => {
 				clearTimeout(timer)
+				window.removeListener('closed', onDestroyed)
 				resolve(value as T)
 			},
 			reject: (err) => {
 				clearTimeout(timer)
+				window.removeListener('closed', onDestroyed)
 				reject(err)
 			}
 		})
@@ -56,6 +66,7 @@ export function invokeRenderer<T>(
 		} catch (error) {
 			clearTimeout(timer)
 			pending.delete(id)
+			window.removeListener('closed', onDestroyed)
 			reject(error instanceof Error ? error : new Error(String(error)))
 		}
 	})

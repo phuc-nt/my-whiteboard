@@ -1,22 +1,49 @@
 import { BrowserWindow, Menu, app } from 'electron'
-import { newDocument, openDocumentViaDialog, saveDocumentInteractive } from './document-actions'
+import { basename } from 'path'
+import {
+	newDocument,
+	openDocumentFromPath,
+	openDocumentViaDialog,
+	saveDocumentInteractive
+} from './document-actions'
+import { clearRecentFiles, loadRecentFiles } from './recent-files-manager'
 import { getWindowState } from './window-manager'
 
 // Native application menu. File items act on the focused window; tldraw's own
 // undo/redo/clipboard handling relies on the standard Edit roles being present.
+// Rebuilt (installApplicationMenu) whenever the recent-files list changes.
 
 function focusedState() {
 	const focused = BrowserWindow.getFocusedWindow()
 	return focused ? getWindowState(focused) : undefined
 }
 
-export function installApplicationMenu(): void {
+async function buildOpenRecentSubmenu(): Promise<Electron.MenuItemConstructorOptions[]> {
+	const recent = await loadRecentFiles()
+	if (recent.length === 0) return [{ label: 'No Recent Documents', enabled: false }]
+	return [
+		...recent.map(
+			(filePath): Electron.MenuItemConstructorOptions => ({
+				label: basename(filePath),
+				toolTip: filePath,
+				click: () => void openDocumentFromPath(filePath)
+			})
+		),
+		{ type: 'separator' },
+		{
+			label: 'Clear Menu',
+			click: () => {
+				void clearRecentFiles().then(() => installApplicationMenu())
+			}
+		}
+	]
+}
+
+export async function installApplicationMenu(): Promise<void> {
 	const isMac = process.platform === 'darwin'
 
 	const template: Electron.MenuItemConstructorOptions[] = [
-		...(isMac
-			? [{ role: 'appMenu' as const }]
-			: []),
+		...(isMac ? [{ role: 'appMenu' as const }] : []),
 		{
 			label: 'File',
 			submenu: [
@@ -29,6 +56,10 @@ export function installApplicationMenu(): void {
 					label: 'Open…',
 					accelerator: 'CmdOrCtrl+O',
 					click: () => void openDocumentViaDialog()
+				},
+				{
+					label: 'Open Recent',
+					submenu: await buildOpenRecentSubmenu()
 				},
 				{ type: 'separator' },
 				{

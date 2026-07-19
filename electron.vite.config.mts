@@ -16,6 +16,11 @@ export default defineConfig({
 		}
 	},
 	renderer: {
-		plugins: [react()]
+		plugins: [react()],
+		optimizeDeps: {
+			// The dep optimizer rewrites this package's `new URL(x, import.meta.url)`
+			// asset references and breaks them at runtime (undefined.startsWith crash).
+			exclude: ['@tldraw/assets']
+		}
 	}
 })

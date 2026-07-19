@@ -5,10 +5,14 @@
 export const RendererToMain = {
 	/** Renderer asks for the document it should display. */
 	docLoad: 'doc:load',
-	/** Renderer reports whether the open document has unsaved changes. */
-	docMarkDirty: 'doc:mark-dirty',
 	/** Renderer failed to apply the loaded document (corrupt snapshot). */
-	docLoadFailed: 'doc:load-failed'
+	docLoadFailed: 'doc:load-failed',
+	/** One-time full snapshot right after mount (baseline for recovery). */
+	docPushInitialSnapshot: 'doc:push-initial-snapshot',
+	/** Debounced incremental record changes → working copy. */
+	docPushDiff: 'doc:push-diff',
+	/** Store a pasted/dropped media file; returns its mywb-asset:// URL. */
+	docStoreAsset: 'doc:store-asset'
 } as const
 
 /** Main → renderer request/response, tunneled over one pair of channels. */
@@ -18,17 +22,28 @@ export const MainToRenderer = {
 } as const
 
 /** Channels the renderer serves via desktop.onInvoke. */
-export type RendererServedChannel = 'editor-get-snapshot' | 'editor-mark-saved'
+export type RendererServedChannel = 'editor-get-snapshot'
 
 export interface DocLoadResult {
 	filePath: string | null
-	/** Serialized document (Phase 1: JSON envelope) or null for a new document. */
+	/** Full store snapshot JSON ({store, schema}) or null for a new document. */
 	documentJson: string | null
 }
 
-/** Reply to editor-mark-saved: did the document change after the snapshot was taken? */
-export interface MarkSavedResult {
-	stillDirty: boolean
+/** Reply from editor-get-snapshot: full record set + schema at capture time. */
+export interface EditorSnapshotResult {
+	records: Array<{ id: string; typeName: string; json: string }>
+	schemaJson: string
+}
+
+export interface StoreAssetRequest {
+	assetId: string
+	bytes: ArrayBuffer
+}
+
+export interface StoreAssetResult {
+	/** mywb-asset://doc/<documentId>/<assetId> */
+	src: string
 }
 
 export interface MainInvokeRequest {
@@ -42,11 +57,4 @@ export interface MainInvokeReply {
 	ok: boolean
 	result?: unknown
 	error?: string
-}
-
-/** Phase 1 on-disk envelope. Replaced by the .mywb archive in Phase 2. */
-export interface DocumentFileEnvelope {
-	formatVersion: 0
-	/** tldraw store snapshot as returned by getSnapshot(editor.store). */
-	snapshot: unknown
 }

@@ -1,16 +1,24 @@
 import { BrowserWindow, dialog } from 'electron'
-import type { MarkSavedResult } from '../shared/ipc-contract'
-import { readDocumentFile, writeDocumentFile } from './document-file-store'
+import type { EditorSnapshotResult } from '../shared/ipc-contract'
+import { installApplicationMenu } from './menu-manager'
+import { recordRecentFile } from './recent-files-manager'
 import { invokeRenderer } from './renderer-invoke'
 import type { WindowState } from './window-manager'
-import { findWindowByFilePath, openDocumentWindow, setDirty, setFilePath } from './window-manager'
+import {
+	findWindowByDocumentId,
+	findWindowByFilePath,
+	openDocumentWindow,
+	setDirty,
+	setFilePath
+} from './window-manager'
+import { WorkingCopy } from './working-copy-manager'
 
 // Document-level commands shared by the menu, shortcuts, and close-confirm flow.
 
 const FILE_FILTERS = [{ name: 'My Whiteboard', extensions: ['mywb'] }]
 
 export function newDocument(): void {
-	openDocumentWindow(null)
+	openDocumentWindow()
 }
 
 async function showErrorDialog(window: BrowserWindow | null, message: string, error: unknown): Promise<void> {
@@ -20,6 +28,30 @@ async function showErrorDialog(window: BrowserWindow | null, message: string, er
 	else await dialog.showMessageBox(options)
 }
 
+/** Open a .mywb path into a window (dialog, Open Recent, Finder open-file). */
+export async function openDocumentFromPath(filePath: string): Promise<void> {
+	const existing = findWindowByFilePath(filePath)
+	if (existing) {
+		existing.window.focus()
+		return
+	}
+	let workingCopy: WorkingCopy
+	try {
+		// Extract + validate before any window opens so a corrupt file fails
+		// with a dialog instead of a broken editor.
+		workingCopy = await WorkingCopy.openFromArchive(
+			filePath,
+			(documentId) => !!findWindowByDocumentId(documentId)
+		)
+	} catch (error) {
+		await showErrorDialog(BrowserWindow.getFocusedWindow(), 'Could not open document', error)
+		return
+	}
+	openDocumentWindow({ workingCopy, filePath })
+	await recordRecentFile(filePath)
+	await installApplicationMenu()
+}
+
 export async function openDocumentViaDialog(): Promise<void> {
 	const result = await dialog.showOpenDialog({
 		properties: ['openFile', 'multiSelections'],
@@ -27,26 +59,15 @@ export async function openDocumentViaDialog(): Promise<void> {
 	})
 	if (result.canceled) return
 	for (const filePath of result.filePaths) {
-		const existing = findWindowByFilePath(filePath)
-		if (existing) {
-			existing.window.focus()
-			continue
-		}
-		try {
-			// Validate before opening a window so a corrupt file fails with a
-			// dialog instead of a broken editor.
-			await readDocumentFile(filePath)
-		} catch (error) {
-			await showErrorDialog(BrowserWindow.getFocusedWindow(), 'Could not open document', error)
-			continue
-		}
-		openDocumentWindow(filePath)
+		await openDocumentFromPath(filePath)
 	}
 }
 
 /** Save the window's document. Returns false if cancelled or already saving. */
 export async function saveDocument(state: WindowState, forceSaveAs = false): Promise<boolean> {
 	if (state.saving) return false
+	const workingCopy = state.workingCopy
+	if (!workingCopy) return false
 
 	let targetPath = state.filePath
 	if (!targetPath || forceSaveAs) {
@@ -60,7 +81,8 @@ export async function saveDocument(state: WindowState, forceSaveAs = false): Pro
 
 	// Saving onto a file that is open in another window would leave two
 	// windows claiming the same path (dedupe and last-save-wins both break).
-	if (targetPath !== state.filePath && findWindowByFilePath(targetPath)) {
+	const collision = findWindowByFilePath(targetPath)
+	if (targetPath !== state.filePath && collision && collision !== state) {
 		await showErrorDialog(
 			state.window,
 			'Cannot save here',
@@ -71,16 +93,18 @@ export async function saveDocument(state: WindowState, forceSaveAs = false): Pro
 
 	state.saving = true
 	try {
-		const { snapshotJson } = await invokeRenderer<{ snapshotJson: string }>(
-			state.window,
-			'editor-get-snapshot'
-		)
-		await writeDocumentFile(targetPath, snapshotJson)
+		// Full snapshot from the renderer = exactly what the user sees. Diffs
+		// arriving while packing are queued inside the working copy and applied
+		// afterwards, leaving the window dirty again if they occurred.
+		const snapshot = await invokeRenderer<EditorSnapshotResult>(state.window, 'editor-get-snapshot')
+		await workingCopy.saveTo(targetPath, {
+			records: snapshot.records,
+			schemaJson: snapshot.schemaJson
+		})
 		setFilePath(state, targetPath)
-		// Edits made while the write was in flight are not in the file yet —
-		// the renderer knows whether anything changed since the snapshot.
-		const { stillDirty } = await invokeRenderer<MarkSavedResult>(state.window, 'editor-mark-saved')
-		setDirty(state, stillDirty)
+		setDirty(state, workingCopy.dirty)
+		await recordRecentFile(targetPath)
+		await installApplicationMenu()
 		return true
 	} finally {
 		state.saving = false
@@ -108,9 +132,21 @@ export async function confirmCloseDirtyWindow(state: WindowState): Promise<boole
 		cancelId: 2
 	})
 	if (response === 2) return false
-	if (response === 1) return true
+	if (response === 1) {
+		// Explicit user intent: the unsaved working copy must not come back
+		// as crash recovery on next launch.
+		state.discarded = true
+		return true
+	}
 	try {
-		return await saveDocument(state)
+		// Edits made while the save was packing re-dirty the window — save
+		// again (bounded) so "Save and close" doesn't drop those edits.
+		for (let attempt = 0; attempt < 3; attempt++) {
+			const saved = await saveDocument(state)
+			if (!saved) return false
+			if (!state.dirty) return true
+		}
+		return true
 	} catch (error) {
 		await showErrorDialog(state.window, 'Save failed', error)
 		return false

@@ -1,12 +1,8 @@
 import type { Editor } from 'tldraw'
-import { getSnapshot, loadSnapshot } from 'tldraw'
+import { loadSnapshot } from 'tldraw'
 
-// The only place that knows how an editor becomes a serialized document and
-// back. Phase 2 keeps this interface and swaps the transport underneath.
-
-export function serializeDocument(editor: Editor): string {
-	return JSON.stringify(getSnapshot(editor.store))
-}
+// Hydrates an editor from the {store, schema} snapshot JSON served by main.
+// The reverse direction (capture for save) lives in document-sync.ts.
 
 export function deserializeDocument(editor: Editor, documentJson: string): void {
 	loadSnapshot(editor.store, JSON.parse(documentJson))

@@ -1,6 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import type { DocLoadResult, MainInvokeReply, MainInvokeRequest } from '../shared/ipc-contract'
+import type {
+	DocLoadResult,
+	MainInvokeReply,
+	MainInvokeRequest,
+	StoreAssetRequest,
+	StoreAssetResult
+} from '../shared/ipc-contract'
 import { MainToRenderer, RendererToMain } from '../shared/ipc-contract'
+import type { InitialSnapshotPayload, RecordsDiffPayload } from '../shared/mywb-format-types'
 
 // Narrow, typed bridge — the renderer never sees Node or Electron APIs directly.
 
@@ -27,11 +34,18 @@ ipcRenderer.on(MainToRenderer.request, async (_event, request: MainInvokeRequest
 const desktopApi = {
 	/** Ask main for the document this window should display. */
 	loadDocument: (): Promise<DocLoadResult> => ipcRenderer.invoke(RendererToMain.docLoad),
-	/** Report unsaved-changes state so main can update title/close behavior. */
-	markDirty: (dirty: boolean): Promise<void> => ipcRenderer.invoke(RendererToMain.docMarkDirty, dirty),
 	/** Report that the loaded document could not be applied to the editor. */
 	reportLoadFailed: (message: string): Promise<void> =>
 		ipcRenderer.invoke(RendererToMain.docLoadFailed, message),
+	/** One-time full snapshot after mount — recovery baseline. */
+	pushInitialSnapshot: (payload: InitialSnapshotPayload): Promise<void> =>
+		ipcRenderer.invoke(RendererToMain.docPushInitialSnapshot, payload),
+	/** Debounced incremental record changes → working copy. */
+	pushDiff: (diff: RecordsDiffPayload): Promise<void> =>
+		ipcRenderer.invoke(RendererToMain.docPushDiff, diff),
+	/** Store pasted/dropped media; returns its mywb-asset:// URL. */
+	storeAsset: (request: StoreAssetRequest): Promise<StoreAssetResult> =>
+		ipcRenderer.invoke(RendererToMain.docStoreAsset, request),
 	/** Serve a main→renderer request channel (e.g. editor-get-snapshot). */
 	onInvoke: (channel: string, handler: InvokeHandler): (() => void) => {
 		handlers.set(channel, handler)
