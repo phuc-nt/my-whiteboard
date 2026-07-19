@@ -1,10 +1,12 @@
 # System Architecture
 
 **My Whiteboard** — local-first Electron + tldraw app, built as an npm
-workspaces monorepo: a shared environment-agnostic core (`@mywb/core`) plus a
-desktop adapter (`apps/desktop`: main/preload/renderer) and a browser proof
-consumer (`apps/web-smoke`). The desktop app remains single process tree, no
-network server.
+workspaces monorepo: a shared environment-agnostic core (`@mywb/core`), a
+desktop adapter (`apps/desktop`: main/preload/renderer), a web adapter
+(`packages/web-adapter`) behind the web app (`apps/web`), a headless CLI
+(`apps/cli`, bin `mywb`), and a read-only Agent Gateway (`services/agent-relay`).
+The desktop app remains a single process tree; its only network surface is the
+loopback Agent API.
 
 ## Process model
 
@@ -61,6 +63,14 @@ tokenless.
 
 The `agent-server-registry` is the only coupling between the server and window
 state, so the server imports no window internals.
+
+**Access surfaces over this one API** (all reuse `server.json`'s port + token):
+the bundled sh skill helper, `mywb app docs|search|exec` (CLI live-mode talking
+to the running app), and `mywb mcp` — a stdio **MCP server** (`apps/cli`) that
+exposes the same API as Model Context Protocol tools (`list_documents`,
+`read_shapes`, `read_bindings`, `screenshot`, `exec`) so any MCP client connects
+with `claude mcp add mywb`. The MCP server is a thin proxy; it adds no new
+network surface beyond the loopback API.
 
 ## Custom schemes
 

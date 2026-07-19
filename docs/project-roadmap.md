@@ -1,6 +1,6 @@
 # Project Roadmap
 
-**My Whiteboard** — cập nhật 2026-07-19. Định hướng dài hạn: **hybrid, tách core**
+**My Whiteboard** — cập nhật 2026-07-20. Định hướng dài hạn: **hybrid, tách core**
 (xem [product-positioning-abstract.md](product-positioning-abstract.md) và
 [system-architecture.md](system-architecture.md)).
 
@@ -78,6 +78,10 @@ backlog pain thật. Track 2 (build): `mywb app docs/search/exec` — CLI live-m
 nói với app đang chạy (port từ helper script), một binary cho mọi agent có
 shell + CI. **CLI trước, MCP sau**: `mywb mcp` là proxy stdio mỏng trên CLI,
 build hay không do dogfood quyết.
+
+Board `docs/architecture.mywb` đã sửa đúng kind (lib/app/tool cho core/adapters,
+app cho desktop+web, tool cho CLI, api cho relay) sau khi 6 backlog fixes thêm
+kind mới — patch record-level qua `mywb file apply`, render verify trong app.
 
 ## Stage 2c — Exec-remote + script sandbox trên web (ứng viên, demote 2026-07-19)
 
