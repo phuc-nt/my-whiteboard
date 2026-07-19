@@ -24,12 +24,24 @@ playwright test). Boundary cấm `electron`/`node:*`/`window.desktop` trong core
 enforce bằng test gate. Behavior desktop không đổi — toàn bộ unit + e2e cũ pass.
 Plan: [plans/260719-1302-stage1-core-extraction-monorepo/](../plans/260719-1302-stage1-core-extraction-monorepo/plan.md).
 
-## Stage 2 — Web target (ứng viên, sau Stage 1)
+## Stage 2a — Headless document access, CI-first (next)
 
-Adapter web trên core đã tách: OPFS/File System Access + WASM sqlite (hoặc
-backend store), script sandbox (iframe/worker), **Agent Gateway** cho agent
-cloud-side (browser không host được localhost server). Phục vụ trục "agent chạy
-ở đâu": local agent → desktop, cloud agent (CI drift-check, bot) → web.
+Quyết định 2026-07-19 (problem-first, brainstorm
+`plans/reports/brainstorm-260719-1444-stage2a-headless-document-access-report.md`):
+cloud agent (CI drift-check, bot cập nhật diagram) cần **tài liệu**, không cần
+canvas live — bước đầu Stage 2 KHÔNG phải gateway. Phạm vi: tách archive stack
+thành `packages/node-adapter` (desktop thành consumer), CLI `mywb file
+read/apply` (record-level, validate schema core, không hứa exec parity), GitHub
+Action mẫu + skill drift-check — agent tự so diagram với code, ta chỉ cấp data
+access. Không server, không auth infra.
+
+## Stage 2b — Web canvas + Agent Gateway (ứng viên, sau 2a)
+
+Adapter web trên core: OPFS/File System Access + WASM sqlite (hoặc backend
+store), script sandbox (iframe/worker), **Agent Gateway** relay agent↔canvas
+live (browser không host được localhost server; exec-remote cần capability
+scoping — nặng hơn hẳn localhost). Gateway chỉ đáng làm khi đã có canvas web
+để relay tới.
 
 ## Stage 3 — Team / collab (ứng viên)
 
