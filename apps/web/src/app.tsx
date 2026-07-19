@@ -1,12 +1,13 @@
 import { customShapeUtils } from '@mywb/core/shapes'
 import { getAssetUrlsByImport } from '@tldraw/assets/imports.vite'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Editor } from 'tldraw'
 import { Tldraw } from 'tldraw'
 import 'tldraw/tldraw.css'
 import { downloadBytes, openFile, saveAs, saveToHandle, supportsFileSystemAccess } from './file-io/file-access'
 import { loadMywbIntoEditor, saveEditorToMywb } from './file-io/mywb-document'
 import type { LoadedMywb } from './file-io/mywb-document'
+import { startRelayClient } from './relay-client/relay-client'
 
 // My Whiteboard on the web: mount the canvas with the custom shapes and
 // open/save .mywb files via the File System Access API (Chromium) or a
@@ -14,12 +15,22 @@ import type { LoadedMywb } from './file-io/mywb-document'
 
 const assetUrls = getAssetUrlsByImport()
 
+// Opt-in read-only Agent Gateway: when a relay URL + token are configured, the
+// tab connects out and exposes the open document to agents for reading. Off by
+// default — the whiteboard works standalone without any server.
+const RELAY_URL = import.meta.env.VITE_RELAY_URL as string | undefined
+const RELAY_TOKEN = import.meta.env.VITE_RELAY_TOKEN as string | undefined
+
 export function App() {
 	const editorRef = useRef<Editor | null>(null)
 	const handleRef = useRef<FileSystemFileHandle | null>(null)
 	const loadedRef = useRef<LoadedMywb | null>(null)
+	const stopRelayRef = useRef<(() => void) | null>(null)
 	const [fileName, setFileName] = useState<string | null>(null)
 	const [busy, setBusy] = useState(false)
+
+	// Close the relay WebSocket if the app unmounts.
+	useEffect(() => () => stopRelayRef.current?.(), [])
 
 	const handleMount = useCallback((editor: Editor) => {
 		editorRef.current = editor
@@ -34,8 +45,19 @@ export function App() {
 	const doLoad = useCallback(async (bytes: Uint8Array, name: string) => {
 		const editor = editorRef.current
 		if (!editor) return
-		loadedRef.current = await loadMywbIntoEditor(editor, bytes, name)
+		const loaded = await loadMywbIntoEditor(editor, bytes, name)
+		loadedRef.current = loaded
 		setFileName(name)
+		// Re-register with the relay for the newly loaded document.
+		if (RELAY_URL && RELAY_TOKEN) {
+			stopRelayRef.current?.()
+			stopRelayRef.current = startRelayClient({
+				url: RELAY_URL,
+				token: RELAY_TOKEN,
+				documentId: loaded.metadata.documentId,
+				editor
+			})
+		}
 	}, [])
 
 	const onOpen = useCallback(async () => {

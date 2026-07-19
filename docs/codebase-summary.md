@@ -87,6 +87,11 @@ examples/ci-drift-check/     # GitHub Action template + SKILL.md: agent reads th
 - `npm run e2e:web` — chrome-channel Playwright against `apps/web`: open a
   desktop-authored `.mywb`, render the custom shapes, save a round-trip through
   the WASM sqlite store.
+- `npm run e2e:relay` — full Agent Gateway path with a real browser tab and a
+  real relay: a Chrome tab loads a `.mywb`, connects out over WebSocket, and an
+  agent reads the open canvas through `POST /api/read` (and `/api/exec` → 404).
+  Self-manages its env-wired preview server, so it runs under
+  `apps/web/playwright.relay.config.ts` (separate from `e2e:web`).
 
 ## Conventions / gotchas
 

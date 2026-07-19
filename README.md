@@ -23,6 +23,7 @@ npm run typecheck  # tsc across all workspaces
 npm test           # vitest: core (plain Node) + desktop
 npm run e2e        # build + Playwright Electron e2e
 npm run e2e:web    # apps/web: open/save .mywb round-trip (chrome channel)
+npm run e2e:relay  # real browser tab ↔ relay ↔ agent read (Agent Gateway e2e)
 npm run build:mac  # unsigned universal macOS DMG → apps/desktop/release/
 ```
 

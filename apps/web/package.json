@@ -9,7 +9,8 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"typecheck": "tsc --noEmit",
-		"e2e": "vite build && playwright test"
+		"e2e": "vite build && playwright test --config playwright.config.ts",
+		"e2e:relay": "playwright test --config playwright.relay.config.ts"
 	},
 	"dependencies": {
 		"@mywb/core": "*",
@@ -25,6 +26,7 @@
 		"@types/react": "^19.0.0",
 		"@types/react-dom": "^19.0.0",
 		"@vitejs/plugin-react": "^5.0.0",
+		"my-whiteboard-agent-relay": "*",
 		"typescript": "^5.9.0",
 		"vite": "^7.0.0"
 	}

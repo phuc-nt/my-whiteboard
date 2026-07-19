@@ -4,6 +4,9 @@ import { defineConfig } from '@playwright/test'
 // separate browser download is needed.
 export default defineConfig({
 	testDir: './e2e',
+	// The relay gateway spec builds + serves its own env-wired app; it runs under
+	// playwright.relay.config.ts, not this shared-webServer config.
+	testIgnore: ['**/relay-gateway.spec.ts'],
 	timeout: 60_000,
 	retries: 0,
 	reporter: [['list']],

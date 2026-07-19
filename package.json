@@ -17,6 +17,7 @@
 		"test": "npm run test --workspaces --if-present",
 		"e2e": "npm run e2e -w apps/desktop",
 		"e2e:web": "npm run e2e -w apps/web",
+		"e2e:relay": "npm run e2e:relay -w apps/web",
 		"build:mac": "npm run build:mac -w apps/desktop"
 	}
 }
