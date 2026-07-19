@@ -1,7 +1,7 @@
 {
-	"name": "my-whiteboard-web-smoke",
+	"name": "my-whiteboard-web",
 	"version": "0.1.0",
-	"description": "Proof that @mywb/core runs in a plain browser: canvas, custom shapes, exec and sync without Electron",
+	"description": "My Whiteboard on the web: open/save .mywb files in the browser, canvas powered by @mywb/core",
 	"type": "module",
 	"private": true,
 	"scripts": {
@@ -13,12 +13,14 @@
 	},
 	"dependencies": {
 		"@mywb/core": "*",
+		"@mywb/web-adapter": "*",
 		"@tldraw/assets": "^5.2.5",
 		"react": "^19.2.7",
 		"react-dom": "^19.2.7",
 		"tldraw": "5.2.5"
 	},
 	"devDependencies": {
+		"@mywb/node-adapter": "*",
 		"@playwright/test": "^1.61.1",
 		"@types/react": "^19.0.0",
 		"@types/react-dom": "^19.0.0",
