@@ -1,8 +1,22 @@
+import { describeRecordStoreContract } from '@mywb/core/storage/testing'
+import { mkdtempSync } from 'fs'
 import { mkdtemp, rm } from 'fs/promises'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { RecordsDatabase } from './records-database'
+
+// The shared RecordStore contract runs against the real sqlite implementation;
+// the same suite runs against MemoryRecordStore in @mywb/core.
+const contractDirs: string[] = []
+afterAll(async () => {
+	await Promise.all(contractDirs.map((dir) => rm(dir, { recursive: true, force: true })))
+})
+describeRecordStoreContract('RecordsDatabase (sqlite)', () => {
+	const dir = mkdtempSync(join(tmpdir(), 'mywb-db-contract-'))
+	contractDirs.push(dir)
+	return new RecordsDatabase(join(dir, 'db.sqlite'))
+})
 
 describe('RecordsDatabase', () => {
 	let dir: string

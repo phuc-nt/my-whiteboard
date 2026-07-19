@@ -1,12 +1,14 @@
 import { DatabaseSync } from 'node:sqlite'
 import type { SerializedRecord } from '@mywb/core/format'
+import type { RecordStore } from '@mywb/core/storage'
 
 // SQLite storage for tldraw records inside a working copy. One row per record;
 // incremental upserts keep crash recovery cheap even for large boards.
+// Implements the core RecordStore contract; checkpoint() is sqlite-only extra.
 
 const SCHEMA_META_KEY = 'tldraw_schema'
 
-export class RecordsDatabase {
+export class RecordsDatabase implements RecordStore {
 	#db: DatabaseSync
 
 	constructor(dbPath: string) {

@@ -10,7 +10,9 @@
 		"./shapes": "./src/shapes/index.ts",
 		"./sync": "./src/sync/index.ts",
 		"./exec": "./src/exec/index.ts",
-		"./script-runtime": "./src/script-runtime/index.ts"
+		"./script-runtime": "./src/script-runtime/index.ts",
+		"./storage": "./src/storage/index.ts",
+		"./storage/testing": "./src/storage/record-store-contract.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit",
