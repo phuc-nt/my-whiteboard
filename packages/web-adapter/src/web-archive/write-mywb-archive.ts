@@ -25,7 +25,5 @@ export function writeMywbArchive(input: MywbArchiveInput): Uint8Array {
 			entries[`script/${name}`] = encoder.encode(text)
 		}
 	}
-	// db.sqlite is already-random binary; level 0 (store) avoids wasting time
-	// trying to compress it, matching how the archive stays small elsewhere.
 	return zipSync(entries, { level: 6 })
 }

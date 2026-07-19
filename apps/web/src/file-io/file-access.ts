@@ -38,17 +38,35 @@ function openWithInput(): Promise<OpenedFile | null> {
 		const input = document.createElement('input')
 		input.type = 'file'
 		input.accept = '.mywb'
+		let settled = false
+		const finish = (value: OpenedFile | null): void => {
+			if (settled) return
+			settled = true
+			window.removeEventListener('focus', onCancel)
+			resolve(value)
+		}
 		input.onchange = async () => {
 			const file = input.files?.[0]
-			if (!file) return resolve(null)
+			if (!file) return finish(null)
 			try {
-				resolve({ handle: null, name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) })
+				finish({ handle: null, name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) })
 			} catch (error) {
-				reject(error)
+				if (!settled) {
+					settled = true
+					window.removeEventListener('focus', onCancel)
+					reject(error)
+				}
 			}
 		}
-		// A cancelled picker fires no event; the promise simply never resolves,
-		// which is acceptable for a user-initiated action.
+		// A cancelled <input type=file> fires no change event. The window regains
+		// focus when the picker closes — if no file arrived shortly after, treat
+		// it as a cancel so the caller isn't left hanging (busy state stuck).
+		const onCancel = (): void => {
+			setTimeout(() => {
+				if (!input.files?.length) finish(null)
+			}, 300)
+		}
+		window.addEventListener('focus', onCancel, { once: true })
 		input.click()
 	})
 }

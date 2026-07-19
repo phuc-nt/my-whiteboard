@@ -47,7 +47,7 @@ download), Open/Save/Save As, relay server nhỏ (WebSocket + token) cho agent
 **read-only** (list/search/get — KHÔNG exec). Format `.mywb` bất biến: round-trip
 desktop↔web trên cùng file là acceptance cứng.
 
-## Stage 2c — Exec-remote + script sandbox trên web (ứng viên, sau 2b)
+## Stage 2c — Exec-remote + script sandbox trên web (next)
 
 Gateway exec (agent chạy code trên canvas web qua relay) + script sandbox
 (iframe/worker) cho document scripts không tin cậy. Tách khỏi 2b vì exec-remote

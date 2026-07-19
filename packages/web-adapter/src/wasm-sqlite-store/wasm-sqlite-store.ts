@@ -49,11 +49,17 @@ export class WasmSqliteStore implements StoreBackend {
 		this.#db.run('BEGIN')
 		try {
 			const upsert = this.#db.prepare(UPSERT_RECORD_SQL)
-			for (const r of put) upsert.run([r.id, r.typeName, r.json])
-			upsert.free()
+			try {
+				for (const r of put) upsert.run([r.id, r.typeName, r.json])
+			} finally {
+				upsert.free()
+			}
 			const del = this.#db.prepare(DELETE_RECORD_SQL)
-			for (const id of removed) del.run([id])
-			del.free()
+			try {
+				for (const id of removed) del.run([id])
+			} finally {
+				del.free()
+			}
 			this.#db.run('COMMIT')
 		} catch (error) {
 			this.#db.run('ROLLBACK')
@@ -67,8 +73,11 @@ export class WasmSqliteStore implements StoreBackend {
 		try {
 			this.#db.run(DELETE_ALL_RECORDS_SQL)
 			const insert = this.#db.prepare(INSERT_RECORD_SQL)
-			for (const r of records) insert.run([r.id, r.typeName, r.json])
-			insert.free()
+			try {
+				for (const r of records) insert.run([r.id, r.typeName, r.json])
+			} finally {
+				insert.free()
+			}
 			this.#db.run(UPSERT_META_SQL, [SCHEMA_META_KEY, schemaJson])
 			this.#db.run('COMMIT')
 		} catch (error) {
