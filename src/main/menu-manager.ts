@@ -1,5 +1,6 @@
-import { BrowserWindow, Menu, app } from 'electron'
+import { BrowserWindow, Menu, app, dialog } from 'electron'
 import { basename } from 'path'
+import { installAgentSkills } from './agent-skills/skill-installer'
 import {
 	newDocument,
 	openDocumentFromPath,
@@ -8,6 +9,33 @@ import {
 } from './document-actions'
 import { clearRecentFiles, loadRecentFiles } from './recent-files-manager'
 import { getWindowState } from './window-manager'
+
+async function runInstallAgentSkills(): Promise<void> {
+	try {
+		const results = await installAgentSkills()
+		const installed = results.filter((r) => r.installed)
+		const failed = results.filter((r) => !r.installed)
+		const lines = installed.map((r) => `• ${r.host}: ${r.skillPath}`)
+		if (failed.length) {
+			lines.push('', 'Failed:', ...failed.map((r) => `• ${r.host}: ${r.error}`))
+		}
+		await dialog.showMessageBox({
+			type: installed.length ? 'info' : 'warning',
+			message: installed.length
+				? `Installed the My Whiteboard skill for ${installed.length} agent(s).`
+				: 'No agent skill directories were found.',
+			detail:
+				(lines.join('\n') || 'Open a coding agent (Claude Code, Codex, Cursor, Gemini) first, then try again.') +
+				'\n\nStart the agent in a new session so it picks up the skill, then ask it to work with your open canvas.'
+		})
+	} catch (error) {
+		await dialog.showMessageBox({
+			type: 'error',
+			message: 'Could not install agent skills',
+			detail: error instanceof Error ? error.message : String(error)
+		})
+	}
+}
 
 // Native application menu. File items act on the focused window; tldraw's own
 // undo/redo/clipboard handling relies on the standard Edit roles being present.
@@ -97,6 +125,11 @@ export async function installApplicationMenu(): Promise<void> {
 		{
 			role: 'help',
 			submenu: [
+				{
+					label: 'Install Agent Skills…',
+					click: () => void runInstallAgentSkills()
+				},
+				{ type: 'separator' },
 				{
 					label: `About ${app.name}`,
 					click: () => app.showAboutPanel()
