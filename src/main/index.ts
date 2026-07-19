@@ -1,6 +1,6 @@
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { BrowserWindow, app, dialog, ipcMain } from 'electron'
-import { join } from 'path'
+import { basename, join } from 'path'
 import type {
 	DocLoadResult,
 	StoreAssetRequest,
@@ -8,6 +8,8 @@ import type {
 } from '../shared/ipc-contract'
 import { RendererToMain } from '../shared/ipc-contract'
 import type { InitialSnapshotPayload, RecordsDiffPayload } from '../shared/mywb-format-types'
+import { AgentApiServer } from './agent-api/agent-api-server'
+import { setAgentDocumentProvider } from './agent-api/agent-server-registry'
 import {
 	assetUrl,
 	installAppProtocolHandler,
@@ -28,6 +30,7 @@ import {
 	findWindowByDocumentId,
 	findWindowByFilePath,
 	getWindowState,
+	listWindowStates,
 	openDocumentWindow,
 	setConfirmCloseHandler,
 	setDirty,
@@ -42,6 +45,18 @@ import {
 	discardWorkingCopies,
 	listRecoverableWorkingCopies
 } from './working-copy-manager'
+
+// A second launch would share userData (server.json clobber, working-copy
+// races) — funnel it into the running instance instead.
+if (!app.requestSingleInstanceLock()) {
+	app.quit()
+}
+
+app.on('second-instance', (_event, argv) => {
+	// Focus something, and open any .mywb passed on the second instance's argv.
+	const fileArg = argv.find((arg) => arg.endsWith('.mywb'))
+	if (fileArg && startupComplete) void openDocumentFromPath(fileArg)
+})
 
 registerAppSchemePrivileges()
 
@@ -178,6 +193,30 @@ async function restoreOrRecoverStartupWindows(): Promise<void> {
 	}
 }
 
+const agentApiServer = new AgentApiServer()
+
+/** Wire the Agent API to live document windows without leaking window internals. */
+function installAgentDocumentProvider(): void {
+	setAgentDocumentProvider({
+		listOpenDocuments() {
+			return listWindowStates()
+				.filter((state) => state.workingCopy)
+				.map((state) => ({
+					id: state.workingCopy!.documentId,
+					filePath: state.filePath,
+					name: state.filePath ? basename(state.filePath).replace(/\.mywb$/, '') : 'Untitled',
+					dirty: state.dirty,
+					lastActive: state.lastActive
+				}))
+		},
+		getTarget(documentId) {
+			const state = findWindowByDocumentId(documentId)
+			if (!state?.workingCopy || state.window.isDestroyed()) return null
+			return { documentId, window: state.window, workingCopy: state.workingCopy }
+		}
+	})
+}
+
 app.whenReady().then(async () => {
 	electronApp.setAppUserModelId('com.mywhiteboard.app')
 
@@ -225,6 +264,7 @@ app.whenReady().then(async () => {
 	})
 
 	registerIpcHandlers()
+	installAgentDocumentProvider()
 	await installApplicationMenu()
 	await restoreOrRecoverStartupWindows()
 	if (windowCount() === 0) newDocument()
@@ -242,6 +282,13 @@ app.whenReady().then(async () => {
 	for (const filePath of pendingOpenFiles.splice(0)) {
 		void openDocumentFromPath(filePath)
 	}
+
+	// Start the agent API only after windows exist and are hydrating — an exec
+	// arriving mid-restore would run against an empty editor that deserialize
+	// then overwrites. The app is fully usable without it, so never block.
+	await agentApiServer.start().catch((error) => {
+		console.error('Agent API server failed to start:', error)
+	})
 
 	// macOS: clicking the dock icon with no windows opens a fresh document.
 	app.on('activate', () => {
@@ -278,12 +325,16 @@ app.on('before-quit', () => {
 app.on('will-quit', (event) => {
 	if (cleanExitPersisted) return
 	event.preventDefault()
-	writeSession({ cleanExit: true, windows: sessionWindowsAtQuit ?? [] })
-		.catch((error) => console.error('Final session write failed:', error))
-		.finally(() => {
-			cleanExitPersisted = true
-			app.quit()
-		})
+	Promise.all([
+		writeSession({ cleanExit: true, windows: sessionWindowsAtQuit ?? [] }).catch((error) =>
+			console.error('Final session write failed:', error)
+		),
+		// Remove server.json so a stale port/token isn't advertised to agents.
+		agentApiServer.dispose().catch(() => {})
+	]).finally(() => {
+		cleanExitPersisted = true
+		app.quit()
+	})
 })
 
 app.on('window-all-closed', () => {

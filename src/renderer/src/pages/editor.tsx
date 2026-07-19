@@ -3,6 +3,7 @@ import { useCallback, useRef } from 'react'
 import type { Editor } from 'tldraw'
 import { Tldraw } from 'tldraw'
 import 'tldraw/tldraw.css'
+import { runExecCode } from '../agent/exec-code-handler'
 import { documentAssetStore } from '../document-assets'
 import { startDocumentSync, captureFullSnapshot } from '../document-sync'
 import { deserializeDocument } from '../document-serialization'
@@ -23,6 +24,12 @@ export function EditorPage() {
 		let disposed = false
 		let stopSync: (() => void) | null = null
 		let offSnapshot: (() => void) | null = null
+
+		// The agent exec channel is safe before hydration (it acts on whatever
+		// is loaded); snapshot/sync must wait for the document to load.
+		const offExec = window.desktop.onInvoke('exec-code', (payload) =>
+			runExecCode(editor, (payload as { code: string }).code)
+		)
 
 		window.desktop
 			.loadDocument()
@@ -52,6 +59,7 @@ export function EditorPage() {
 
 		cleanupRef.current = () => {
 			disposed = true
+			offExec()
 			offSnapshot?.()
 			stopSync?.()
 		}

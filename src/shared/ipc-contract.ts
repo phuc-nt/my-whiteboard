@@ -22,7 +22,7 @@ export const MainToRenderer = {
 } as const
 
 /** Channels the renderer serves via desktop.onInvoke. */
-export type RendererServedChannel = 'editor-get-snapshot'
+export type RendererServedChannel = 'editor-get-snapshot' | 'exec-code'
 
 export interface DocLoadResult {
 	filePath: string | null

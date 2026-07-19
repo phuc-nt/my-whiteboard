@@ -3,9 +3,17 @@
 	<head>
 		<meta charset="UTF-8" />
 		<title>My Whiteboard</title>
+		<!--
+			'unsafe-eval' is required, not incidental: agent /exec code and (Phase 7)
+			document scripts run against the live editor via Function/import in this
+			renderer — that IS the product. Threat model: the renderer only ever loads
+			our own bundle (no remote scripts; will-navigate is blocked in main), and
+			document *content* is data, never executed. The eval surface is reachable
+			only through the token-guarded localhost API and consent-gated scripts.
+		-->
 		<meta
 			http-equiv="Content-Security-Policy"
-			content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: mywb-asset:; media-src 'self' blob: mywb-asset:; font-src 'self' data:; connect-src 'self' blob: data: mywb-asset:; worker-src 'self' blob:; object-src 'none'; base-uri 'none'"
+			content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: mywb-asset:; media-src 'self' blob: mywb-asset:; font-src 'self' data:; connect-src 'self' blob: data: mywb-asset:; worker-src 'self' blob:; object-src 'none'; base-uri 'none'"
 		/>
 		<style>
 			html,

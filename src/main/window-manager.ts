@@ -18,6 +18,12 @@ export interface WindowState {
 	saving: boolean
 	/** User chose Don't Save — the working copy must be deleted on close. */
 	discarded: boolean
+	/** Timestamp of last focus — orders getDocs() for the agent API. */
+	lastActive: number
+}
+
+export function listWindowStates(): WindowState[] {
+	return [...windows.values()]
 }
 
 // One window per document. Windows keyed by BrowserWindow id; a filePath maps
@@ -159,11 +165,16 @@ export function openDocumentWindow(options: OpenDocumentWindowOptions = {}): Win
 		dirty: false,
 		closing: false,
 		saving: false,
-		discarded: false
+		discarded: false,
+		lastActive: Date.now()
 	}
 	windows.set(window.id, state)
 	updateWindowTitle(state)
 	if (options.dirty) setDirty(state, true)
+
+	window.on('focus', () => {
+		state.lastActive = Date.now()
+	})
 
 	window.on('ready-to-show', () => window.show())
 
