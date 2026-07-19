@@ -24,7 +24,7 @@ playwright test). Boundary cấm `electron`/`node:*`/`window.desktop` trong core
 enforce bằng test gate. Behavior desktop không đổi — toàn bộ unit + e2e cũ pass.
 Plan: [plans/260719-1302-stage1-core-extraction-monorepo/](../plans/260719-1302-stage1-core-extraction-monorepo/plan.md).
 
-## Stage 2a — Headless document access, CI-first (next)
+## Stage 2a — Headless document access, CI-first ✅ (done 2026-07-19)
 
 Quyết định 2026-07-19 (problem-first, brainstorm
 `plans/reports/brainstorm-260719-1444-stage2a-headless-document-access-report.md`):

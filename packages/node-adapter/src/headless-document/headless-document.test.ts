@@ -95,6 +95,35 @@ describe('applyRecordChanges', () => {
 		).rejects.toThrow()
 	})
 
+	it('rejects removing the page or document record (structural break) without touching the file', async () => {
+		const dir = await tempDir()
+		const file = join(dir, 'board.mywb')
+		await buildMywbFixture(file, { serviceNodes: [{ name: 'svc', kind: 'api' }] })
+		const before = await readMywbDocument(file)
+		const hashBefore = await sha256(file)
+		const page = before.records.find((r) => r.typeName === 'page')!
+
+		await expect(applyRecordChanges(file, { put: [], removed: [page.id] })).rejects.toThrow(
+			/structurally broken/
+		)
+		await expect(
+			applyRecordChanges(file, { put: [], removed: ['document:document'] })
+		).rejects.toThrow(/structurally broken/)
+		expect(await sha256(file)).toBe(hashBefore)
+	})
+
+	it('rejects a put whose parentId dangles', async () => {
+		const dir = await tempDir()
+		const file = join(dir, 'board.mywb')
+		await buildMywbFixture(file, { serviceNodes: [{ name: 'svc', kind: 'api' }] })
+		const before = await readMywbDocument(file)
+		const orphan = {
+			...makeServiceNodeRecord({ name: 'orphan', kind: 'api' }, before.records),
+			parentId: 'page:does-not-exist'
+		}
+		await expect(applyRecordChanges(file, { put: [orphan], removed: [] })).rejects.toThrow()
+	})
+
 	it('preserves script dir and scriptDigest across an apply', async () => {
 		const dir = await tempDir()
 		const file = join(dir, 'board.mywb')

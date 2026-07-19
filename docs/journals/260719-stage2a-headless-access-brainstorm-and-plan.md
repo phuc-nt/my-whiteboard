@@ -16,6 +16,16 @@
 
 14 claims checked, 12 verified, 0 failed (export names archive, createTLStore nhận custom utils qua `checkShapesAndAddCore`, writer skip state.json, node:sqlite ≥22.5). 2 unverified có gate runtime trong phase (electron-builder packing, vite SSR bundle tldraw).
 
+## Thực thi (cùng ngày, /mk:cook)
+
+4 phases xong trong 5 commits. Kết quả: `@mywb/node-adapter` (archive move + headless-document API), `apps/cli` (`mywb file read/apply` + `make-fixture`, dist tự chứa 5.3MB qua vite SSR, mermaid lazy chunk), `examples/ci-drift-check/`. 78 unit/integration tests + desktop e2e 10/10 + web e2e.
+
+Vấp đáng ghi:
+- **tldraw giữ event loop ngoài NODE_ENV=test** → CLI xong việc nhưng không exit (CI sẽ treo vô hạn); dưới vitest thì exit nên test không lộ — bắt được nhờ smoke tay. Fix: `process.exit()` tường minh + stdout write awaited (flush pipe).
+- **Code review bắt critical thật**: `removed` không qua validate — xóa được record page/document, ghi file hỏng với exit 0, trái contract "accepted iff canvas accepts". Fix: heal-diff qua `ensureStoreIsUsable` + referential check (parentId, binding endpoints — healer tldraw KHÔNG chase references, phát hiện khi test dangling-parentId vẫn pass) + schema-equality guard + reject file thiếu schema.
+- Exit-code contract: parseArgs error phải là usage error (2), không phải operation failure (1).
+- make-fixture.mjs kế hoạch gốc bất khả thi (Node thuần không chạy TS source) → entry thứ hai trong dist CLI.
+
 ## Trạng thái
 
-Plan validated tại `plans/260719-1444-stage2a-headless-document-access/`, Failed=0, sẵn sàng cook.
+Stage 2a HOÀN THÀNH — roadmap ✅, moat "diagram không chết mốc" có đường chạy thật. Còn nợ manual: mở file CLI-sửa trong desktop app (GUI check). Kế tiếp: Stage 2b (web canvas + gateway) hoặc dogfood drift-check CI.

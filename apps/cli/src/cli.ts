@@ -58,6 +58,13 @@ main().then(
 		process.exit(0)
 	},
 	(error: unknown) => {
+		// parseArgs failures are usage errors (contract: exit 2), not operation
+		// failures (exit 1).
+		const code = (error as { code?: unknown }).code
+		if (typeof code === 'string' && code.startsWith('ERR_PARSE_ARGS')) {
+			process.stderr.write(`mywb: ${error instanceof Error ? error.message : String(error)}\n`)
+			usageExit(2)
+		}
 		process.stderr.write(`mywb: ${error instanceof Error ? error.message : String(error)}\n`)
 		process.exit(1)
 	}

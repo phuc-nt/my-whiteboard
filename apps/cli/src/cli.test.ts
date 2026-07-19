@@ -109,6 +109,17 @@ describe('mywb CLI surface', () => {
 		expect(error.stderr).toContain('Usage')
 	})
 
+	it('unknown flag is a usage error: exit 2', async () => {
+		const file = await makeFixture()
+		const error = (await run(process.execPath, [CLI, 'file', 'read', file, '--bogus']).then(
+			() => {
+				throw new Error('expected unknown flag to fail')
+			},
+			(e: { code: number }) => e
+		)) as { code: number }
+		expect(error.code).toBe(2)
+	})
+
 	it('--help exits 0 and prints usage', async () => {
 		const { stdout } = await run(process.execPath, [CLI, '--help'])
 		expect(stdout).toContain('mywb file read')
