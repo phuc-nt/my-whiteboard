@@ -36,6 +36,13 @@ async function makeFixture(): Promise<string> {
 }
 
 describe('mywb file read', () => {
+	it('does not leak the node:sqlite ExperimentalWarning to stderr', async () => {
+		const file = await makeFixture()
+		const { stderr } = await run(process.execPath, [CLI, 'file', 'read', file])
+		expect(stderr).not.toContain('ExperimentalWarning')
+		expect(stderr).not.toContain('SQLite')
+	})
+
 	it('--json prints full metadata, schema and parsed records on stdout', async () => {
 		const file = await makeFixture()
 		const { stdout } = await run(process.execPath, [CLI, 'file', 'read', file, '--json'])
