@@ -12,7 +12,7 @@
 		"./exec": "./src/exec/index.ts",
 		"./script-runtime": "./src/script-runtime/index.ts",
 		"./storage": "./src/storage/index.ts",
-		"./storage/testing": "./src/storage/record-store-contract.ts"
+		"./storage/testing": "./src/storage/testing.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit",
