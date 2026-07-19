@@ -30,6 +30,18 @@ function jsonResult(value: unknown): ToolResult {
 	return { content: [{ type: 'text', text: JSON.stringify(value, null, 2) }] }
 }
 
+// The search/exec endpoints wrap their payload in a { success, result, error }
+// envelope. Unwrap it: surface the raw result, or turn a failure into a tool
+// error the client sees as such.
+function unwrap(envelope: unknown): unknown {
+	const e = envelope as { success?: boolean; result?: unknown; error?: string }
+	if (e && typeof e === 'object' && 'success' in e) {
+		if (!e.success) throw new Error(e.error ?? 'operation failed')
+		return e.result
+	}
+	return envelope
+}
+
 async function withApp<T>(
 	serverJson: string | undefined,
 	use: (info: Awaited<ReturnType<typeof loadServerInfo>>) => Promise<T>
@@ -50,7 +62,9 @@ export function registerMywbTools(server: McpServer): void {
 		},
 		async () => {
 			try {
-				return jsonResult(await withApp(serverJson, (info) => runSearch(info, 'return await api.getDocs()')))
+				return jsonResult(
+					unwrap(await withApp(serverJson, (info) => runSearch(info, 'return await api.getDocs()')))
+				)
 			} catch (error) {
 				return errorResult(error)
 			}
@@ -66,8 +80,10 @@ export function registerMywbTools(server: McpServer): void {
 		async ({ documentId }) => {
 			try {
 				return jsonResult(
-					await withApp(serverJson, (info) =>
-						runSearch(info, `return await api.getShapes(${JSON.stringify(documentId)})`)
+					unwrap(
+						await withApp(serverJson, (info) =>
+							runSearch(info, `return await api.getShapes(${JSON.stringify(documentId)})`)
+						)
 					)
 				)
 			} catch (error) {
@@ -85,8 +101,10 @@ export function registerMywbTools(server: McpServer): void {
 		async ({ documentId }) => {
 			try {
 				return jsonResult(
-					await withApp(serverJson, (info) =>
-						runSearch(info, `return await api.getBindings(${JSON.stringify(documentId)})`)
+					unwrap(
+						await withApp(serverJson, (info) =>
+							runSearch(info, `return await api.getBindings(${JSON.stringify(documentId)})`)
+						)
 					)
 				)
 			} catch (error) {
@@ -103,9 +121,11 @@ export function registerMywbTools(server: McpServer): void {
 		},
 		async ({ documentId }) => {
 			try {
-				const dataUrl = (await withApp(serverJson, (info) =>
-					runSearch(info, `return await api.getScreenshot(${JSON.stringify(documentId)})`)
-				)) as string
+				const dataUrl = unwrap(
+					await withApp(serverJson, (info) =>
+						runSearch(info, `return await api.getScreenshot(${JSON.stringify(documentId)})`)
+					)
+				) as string
 				const base64 = dataUrl.includes(',') ? dataUrl.slice(dataUrl.indexOf(',') + 1) : dataUrl
 				return { content: [{ type: 'image', data: base64, mimeType: 'image/png' }] }
 			} catch (error) {
