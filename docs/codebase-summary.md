@@ -14,6 +14,12 @@ packages/node-adapter/       # @mywb/node-adapter — Node-only shared code (no 
                                #   validation = headless TLStore with the app's shape schemas;
                                #   fixture-builder for tests and examples
 
+packages/web-adapter/        # @mywb/web-adapter — browser-only (no electron, no node:*)
+└── src/
+    ├── web-archive/           # .mywb read/write via fflate — same layout as the Node yauzl one
+    └── wasm-sqlite-store/     # StoreBackend via sql.js reading/writing db.sqlite; shares the
+                               #   table schema (SQL from @mywb/core) with node:sqlite → one format
+
 packages/core/               # @mywb/core — environment-agnostic (no electron, no node:*)
 └── src/
     ├── format/                # .mywb zod schemas, SerializedRecord, archive entry names
@@ -35,7 +41,12 @@ apps/desktop/                # Electron adapter (electron-vite + React)
 │                              #   over the IPC transport; document-assets
 └── e2e/                       # Playwright + Electron suite (agent API, shapes, scripts)
 
-apps/web-smoke/              # Proof consumer: core in a plain browser (vite + chrome test)
+apps/web/                    # My Whiteboard on the web (vite + React): open/save .mywb via File
+                             #   System Access (Chromium) or download/upload fallback; canvas from core
+
+services/agent-relay/        # my-whiteboard-agent-relay — read-only Agent Gateway: a web tab
+                             #   connects out over WebSocket + token; agents POST /api/read (list/
+                             #   getShapes/getBindings). NO exec route by design (that is Stage 2c)
 
 apps/cli/                    # my-whiteboard-cli — bin `mywb` (self-contained dist via vite SSR)
                              #   `mywb file read <p> [--json]`, `mywb file apply <p> <changes.json>`
@@ -52,12 +63,15 @@ examples/ci-drift-check/     # GitHub Action template + SKILL.md: agent reads th
   package gate (no electron/@types/node deps). `tldraw`/`react` are
   peerDependencies (one instance repo-wide — check `npm ls tldraw`).
 - **SyncTransport** (`@mywb/core/sync`): `document-sync` streams through an
-  injected `{pushInitialSnapshot, pushDiff}`; desktop passes `window.desktop`
-  IPC, web-smoke passes a `MemoryRecordStore`. Lifecycle (pagehide flush,
-  dispose) is the adapter's job.
-- **RecordStore** (`@mywb/core/storage`): mirror of the sqlite adapter's API
-  minus `checkpoint()` (WAL-specific). One shared contract test suite runs
-  against both implementations (`@mywb/core/storage/testing`).
+  injected `{pushInitialSnapshot, pushDiff}`; the desktop passes `window.desktop`
+  IPC. Lifecycle (pagehide flush, dispose) is the adapter's job.
+- **RecordStore** (sync) + **StoreBackend** (async) (`@mywb/core/storage`):
+  parallel persistence contracts. `RecordsDatabase` (desktop, node:sqlite)
+  implements RecordStore; `WasmSqliteStore` (web, sql.js) implements
+  StoreBackend; both run shared contract suites (`@mywb/core/storage/testing`)
+  and share the table SQL (`record-db-schema.ts`) so the `.mywb` format stays
+  single. `checkpoint()` is sqlite-only and stays off both interfaces, so the
+  desktop keeps using `RecordsDatabase` directly.
 - **IPC** goes through `apps/desktop/src/shared/ipc-contract.ts`; main→renderer
   uses one correlated request/reply pair (`renderer-invoke.ts`).
 - **Custom shapes** (tldraw v5): static `props` validators carry the
@@ -70,8 +84,9 @@ examples/ci-drift-check/     # GitHub Action template + SKILL.md: agent reads th
   proof core is environment-agnostic) + desktop unit tests.
 - `npm run e2e` — Playwright drives the built Electron app through the agent
   API (throwaway userData via `MYWB_TEST_USER_DATA`).
-- `npm run e2e:web` — chrome-channel Playwright against `apps/web-smoke`
-  (canvas mount, exec round-trip, sync into memory store).
+- `npm run e2e:web` — chrome-channel Playwright against `apps/web`: open a
+  desktop-authored `.mywb`, render the custom shapes, save a round-trip through
+  the WASM sqlite store.
 
 ## Conventions / gotchas
 
@@ -82,7 +97,7 @@ examples/ci-drift-check/     # GitHub Action template + SKILL.md: agent reads th
   main/preload. `electronVersion` is pinned in `electron-builder.yml` because
   workspace hoisting hides the installed electron from builder.
 - Store history reaches `store.listen` subscribers on the next animation frame
-  in browsers — flush-then-read code must wait a frame (see web-smoke).
+  in browsers — flush-then-read code must wait a frame (see apps/web).
 - `"type": "module"` — preload is forced to CJS; `@tldraw/assets` is excluded
   from dep optimizers in both vite configs.
 - DMG output: `apps/desktop/release/`.

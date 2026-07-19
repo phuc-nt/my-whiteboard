@@ -35,7 +35,7 @@ read/apply` (record-level, validate schema core, không hứa exec parity), GitH
 Action mẫu + skill drift-check — agent tự so diagram với code, ta chỉ cấp data
 access. Không server, không auth infra.
 
-## Stage 2b — Web canvas + persistence + gateway read-only (next)
+## Stage 2b — Web canvas + persistence + gateway read-only ✅ (done 2026-07-19)
 
 Quyết định 2026-07-19 (brainstorm
 `plans/reports/brainstorm-260719-1602-stage2b-web-canvas-persistence-gateway-report.md`):

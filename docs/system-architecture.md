@@ -111,11 +111,18 @@ syncs in a plain browser.
 - **Desktop adapter** (`apps/desktop/src/main/*`): file system, localhost HTTP
   server, custom protocols, `fs.watch`; archive/sqlite now comes from the node
   adapter; the renderer wires core over the IPC transport.
-- **Web adapter** (future, Stage 2): OPFS / File System Access, WASM sqlite or a
-  backend store, WebSocket sync, an Agent Gateway relaying agent↔canvas
-  (browsers can't host a localhost server), and a script sandbox (iframe/worker
-  — running untrusted scripts in the app origin is a real XSS surface on the
-  web).
+- **Web adapter** (`packages/web-adapter`, Stage 2b): `.mywb` read/write via
+  fflate + a `WasmSqliteStore` (sql.js) that reads/writes the same `db.sqlite`
+  as desktop — the table SQL lives in `@mywb/core`, so the format never splits
+  (a round-trip test drives desktop→web→desktop on one file). `apps/web` opens
+  and saves files through the File System Access API (Chromium) with a
+  download/upload fallback (Firefox/Safari). The **Agent Gateway**
+  (`services/agent-relay`) is read-only in this stage: a browser tab connects
+  out over WebSocket + token (browsers can't host a localhost server) and the
+  relay forwards structured read requests (`list`/`getShapes`/`getBindings`) —
+  there is deliberately no exec route. Exec-remote and a script sandbox are
+  Stage 2c (running agent code on a web canvas is a real RCE surface that
+  localhost's same-machine model doesn't have).
 
 Decision axis: **where the engineer's agent runs.** Local agent → desktop's
 loopback API is the cheapest, zero-config path. Cloud-side agent → web + backend.

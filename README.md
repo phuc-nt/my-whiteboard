@@ -13,7 +13,7 @@ files. See [docs/product-positioning-abstract.md](docs/product-positioning-abstr
 npm workspaces monorepo: `packages/core` (`@mywb/core`, environment-agnostic
 core), `packages/node-adapter` (archive/sqlite + headless document access),
 `apps/desktop` (Electron adapter), `apps/cli` (headless `mywb` CLI),
-`apps/web-smoke` (browser proof). CI drift-check template:
+`apps/web` (web app), `services/agent-relay` (read-only gateway). CI drift-check template:
 [examples/ci-drift-check/](examples/ci-drift-check/).
 
 ```bash
@@ -22,7 +22,7 @@ npm run dev        # launch the desktop app in dev
 npm run typecheck  # tsc across all workspaces
 npm test           # vitest: core (plain Node) + desktop
 npm run e2e        # build + Playwright Electron e2e
-npm run e2e:web    # web-smoke: core in a plain browser (chrome channel)
+npm run e2e:web    # apps/web: open/save .mywb round-trip (chrome channel)
 npm run build:mac  # unsigned universal macOS DMG → apps/desktop/release/
 ```
 
