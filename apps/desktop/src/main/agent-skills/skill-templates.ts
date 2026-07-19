@@ -32,10 +32,24 @@ to the next call.** Re-read the port and token at the top of every call:
 PORT=$(jq -r .port ${sj}); TOKEN=$(jq -r .token ${sj})
 \`\`\`
 
-### Helper: mywb
+### Preferred: the mywb binary (app mode)
 
-A ready-made helper ships with this skill. It re-reads port + token itself on
-every call, so you never handle the token or the fresh-shell problem:
+If the \`mywb\` CLI is available (on PATH, or built in the repo at
+\`apps/cli/dist/cli.js\` — run as \`node <repo>/apps/cli/dist/cli.js\`), prefer it:
+it finds the running app itself (server.json), handles the token, prints JSON:
+
+\`\`\`bash
+mywb app docs                                  # open documents (JSON)
+mywb app search 'return await api.getDocs()'   # read-only JS in the search context
+mywb app exec DOC_ID 'return editor.getCurrentPageShapes().length'
+# long code? pipe it:  echo "$CODE" | mywb app exec DOC_ID -
+\`\`\`
+
+### Legacy fallback: the bundled sh helper
+
+When the binary is not available, a helper script ships with this skill. It
+re-reads port + token on every call, so you never handle the token or the
+fresh-shell problem:
 
 \`\`\`bash
 sh ${mywb} POST /api/search '{"code":"return await api.getDocs()"}'

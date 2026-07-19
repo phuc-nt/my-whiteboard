@@ -49,7 +49,10 @@ services/agent-relay/        # my-whiteboard-agent-relay — read-only Agent Gat
                              #   getShapes/getBindings). NO exec route by design (that is Stage 2c)
 
 apps/cli/                    # my-whiteboard-cli — bin `mywb` (self-contained dist via vite SSR)
-                             #   `mywb file read <p> [--json]`, `mywb file apply <p> <changes.json>`
+                             #   file mode (headless): `mywb file read|apply ...`
+                             #   app mode (live):      `mywb app docs|search|exec ...` — talks to the
+                             #     RUNNING desktop app via server.json (per-OS userData; override
+                             #     --server-json / MYWB_SERVER_JSON)
                              #   + dist/make-fixture.js for sample boards
 
 examples/ci-drift-check/     # GitHub Action template + SKILL.md: agent reads the diagram via

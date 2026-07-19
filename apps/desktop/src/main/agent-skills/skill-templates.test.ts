@@ -14,6 +14,15 @@ describe('skill templates', () => {
 		expect(md).not.toContain("await import('tldraw')")
 	})
 
+	it('teaches the mywb binary app-mode as the preferred path, helper as legacy fallback', () => {
+		const md = renderSkillMarkdown(sj, mywb)
+		expect(md).toContain('mywb app docs')
+		expect(md).toContain('mywb app exec')
+		expect(md).toContain('mywb app search')
+		// The bundled sh helper stays, but labelled as the fallback.
+		expect(md.toLowerCase()).toContain('legacy fallback')
+	})
+
 	it('documents the custom dev shapes', () => {
 		const md = renderSkillMarkdown(sj, mywb)
 		for (const shape of ['service-node', 'code-ref', 'mermaid-block']) {
