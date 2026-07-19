@@ -23,6 +23,15 @@ describe('skill templates', () => {
 		expect(md.toLowerCase()).toContain('legacy fallback')
 	})
 
+	it('teaches connecting via MCP (claude mcp add) and lists the tools', () => {
+		const md = renderSkillMarkdown(sj, mywb)
+		expect(md).toContain('claude mcp add')
+		expect(md).toContain('mywb mcp')
+		for (const tool of ['list_documents', 'read_shapes', 'exec', 'screenshot']) {
+			expect(md).toContain(tool)
+		}
+	})
+
 	it('teaches the arrow relationship convention (meta.relation)', () => {
 		const md = renderSkillMarkdown(sj, mywb)
 		expect(md).toContain('meta.relation')

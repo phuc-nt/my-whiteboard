@@ -53,6 +53,9 @@ apps/cli/                    # my-whiteboard-cli — bin `mywb` (self-contained 
                              #   app mode (live):      `mywb app docs|search|exec ...` — talks to the
                              #     RUNNING desktop app via server.json (per-OS userData; override
                              #     --server-json / MYWB_SERVER_JSON)
+                             #   mcp mode:             `mywb mcp` — stdio MCP server (5 tools:
+                             #     list_documents/read_shapes/read_bindings/screenshot/exec) over the
+                             #     same agent API; @modelcontextprotocol/sdk (externalized, not bundled)
                              #   + dist/make-fixture.js for sample boards
 
 examples/ci-drift-check/     # GitHub Action template + SKILL.md: agent reads the diagram via

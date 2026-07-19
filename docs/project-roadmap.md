@@ -47,7 +47,7 @@ download), Open/Save/Save As, relay server nhỏ (WebSocket + token) cho agent
 **read-only** (list/search/get — KHÔNG exec). Format `.mywb` bất biến: round-trip
 desktop↔web trên cùng file là acceptance cứng.
 
-## `mywb mcp` — MCP server over the Agent API (next)
+## `mywb mcp` — MCP server over the Agent API ✅ (done 2026-07-20)
 
 Quyết định 2026-07-20 (brainstorm
 `plans/reports/brainstorm-260720-0309-mywb-mcp-server-report.md`): sau khi

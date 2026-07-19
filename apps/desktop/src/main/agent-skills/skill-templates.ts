@@ -17,6 +17,24 @@ Use this skill for tasks involving open My Whiteboard documents. The desktop app
 runs a local HTTP server that lists documents, reads canvas state, captures
 screenshots, and executes JavaScript against a live tldraw editor.
 
+## Best: connect over MCP
+
+If your agent speaks MCP (Claude Code, Cursor, ...), add the whiteboard as an
+MCP server once and use its tools directly — no tokens, no shell, schemas
+included:
+
+\`\`\`bash
+# From the my-whiteboard repo (built CLI):
+claude mcp add mywb -- node <repo>/apps/cli/dist/cli.js mcp
+# Or, if the mywb binary is on PATH:
+claude mcp add mywb -- mywb mcp
+\`\`\`
+
+Tools: \`list_documents\`, \`read_shapes({ documentId })\`,
+\`read_bindings({ documentId })\`, \`screenshot({ documentId })\`,
+\`exec({ documentId, code })\`. The exec tool runs JS against the live editor,
+same semantics as the shell paths below.
+
 ## Server
 
 Default: http://localhost:7236. If that port isn't active, read \`port\` from

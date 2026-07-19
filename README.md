@@ -40,6 +40,10 @@ npm run build:mac  # unsigned universal macOS DMG → apps/desktop/release/
   `POST /api/doc/:id/exec` runs code against the live editor; `GET /readme`
   documents it for an agent. Install the skill for your agents from
   **Help → Install Agent Skills…**.
+- **MCP server** — `mywb mcp` (from `apps/cli`) exposes the running app's canvas
+  as MCP tools (`list_documents`, `read_shapes`, `read_bindings`, `screenshot`,
+  `exec`) so any MCP client connects with one command:
+  `claude mcp add mywb -- node apps/cli/dist/cli.js mcp`.
 - **Custom shapes** — `service-node`, `code-ref`, `mermaid-block` carry
   structured, agent-readable data for architecture and code-reference diagrams.
 - **Document scripts** — `script/main.js` inside a file runs on open (after
