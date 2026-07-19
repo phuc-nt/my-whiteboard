@@ -35,13 +35,24 @@ read/apply` (record-level, validate schema core, không hứa exec parity), GitH
 Action mẫu + skill drift-check — agent tự so diagram với code, ta chỉ cấp data
 access. Không server, không auth infra.
 
-## Stage 2b — Web canvas + Agent Gateway (ứng viên, sau 2a)
+## Stage 2b — Web canvas + persistence + gateway read-only (next)
 
-Adapter web trên core: OPFS/File System Access + WASM sqlite (hoặc backend
-store), script sandbox (iframe/worker), **Agent Gateway** relay agent↔canvas
-live (browser không host được localhost server; exec-remote cần capability
-scoping — nặng hơn hẳn localhost). Gateway chỉ đáng làm khi đã có canvas web
-để relay tới.
+Quyết định 2026-07-19 (brainstorm
+`plans/reports/brainstorm-260719-1602-stage2b-web-canvas-persistence-gateway-report.md`):
+web-smoke đã chứng minh canvas render trên browser; 2b biến nó thành app web
+thật **mở/lưu `.mywb`** + agent **đọc** canvas web. Phạm vi: `apps/web` (nâng
+từ web-smoke), `StoreBackend` interface, `packages/web-adapter` (web-archive
+bằng fflate + WASM sqlite + File System Access, Chromium-first fallback
+download), Open/Save/Save As, relay server nhỏ (WebSocket + token) cho agent
+**read-only** (list/search/get — KHÔNG exec). Format `.mywb` bất biến: round-trip
+desktop↔web trên cùng file là acceptance cứng.
+
+## Stage 2c — Exec-remote + script sandbox trên web (ứng viên, sau 2b)
+
+Gateway exec (agent chạy code trên canvas web qua relay) + script sandbox
+(iframe/worker) cho document scripts không tin cậy. Tách khỏi 2b vì exec-remote
+trên web là bài bảo mật nặng (RCE thật nếu sai — desktop an toàn nhờ localhost +
+cùng máy, web thì không).
 
 ## Stage 3 — Team / collab (ứng viên)
 
