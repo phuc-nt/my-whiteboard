@@ -7,7 +7,10 @@
 	"exports": {
 		"./format": "./src/format/index.ts",
 		"./agent-protocol": "./src/agent-protocol/index.ts",
-		"./shapes": "./src/shapes/index.ts"
+		"./shapes": "./src/shapes/index.ts",
+		"./sync": "./src/sync/index.ts",
+		"./exec": "./src/exec/index.ts",
+		"./script-runtime": "./src/script-runtime/index.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit",

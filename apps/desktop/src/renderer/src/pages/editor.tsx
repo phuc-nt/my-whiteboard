@@ -3,12 +3,12 @@ import { useCallback, useRef } from 'react'
 import type { Editor } from 'tldraw'
 import { Tldraw } from 'tldraw'
 import 'tldraw/tldraw.css'
-import { runExecCode } from '../agent/exec-code-handler'
-import { documentAssetStore } from '../document-assets'
-import { startDocumentSync, captureFullSnapshot } from '../document-sync'
-import { deserializeDocument } from '../document-serialization'
-import { runDocumentScript, stopDocumentScript } from '../document-scripts/script-runtime'
+import { runExecCode } from '@mywb/core/exec'
+import { runDocumentScript, stopDocumentScript } from '@mywb/core/script-runtime'
 import { customShapeUtils } from '@mywb/core/shapes'
+import { captureFullSnapshot, deserializeDocument, startDocumentSync } from '@mywb/core/sync'
+import type { DocumentSyncHandle } from '@mywb/core/sync'
+import { documentAssetStore } from '../document-assets'
 
 // Full-window tldraw editor. On mount it pulls the window's document from the
 // main process, starts streaming changes to the working copy, and serves the
@@ -24,8 +24,17 @@ export function EditorPage() {
 		cleanupRef.current?.()
 
 		let disposed = false
-		let stopSync: (() => void) | null = null
+		let sync: DocumentSyncHandle | null = null
 		let offSnapshot: (() => void) | null = null
+
+		// Core streams through this transport; the IPC bridge and window
+		// lifecycle (pagehide flush) are this adapter's responsibility.
+		const syncTransport = {
+			pushInitialSnapshot: (p: Parameters<typeof window.desktop.pushInitialSnapshot>[0]) =>
+				window.desktop.pushInitialSnapshot(p),
+			pushDiff: (p: Parameters<typeof window.desktop.pushDiff>[0]) => window.desktop.pushDiff(p)
+		}
+		const onPageHide = (): void => sync?.flush()
 
 		// The agent exec channel is safe before hydration (it acts on whatever
 		// is loaded); snapshot/sync must wait for the document to load.
@@ -43,7 +52,7 @@ export function EditorPage() {
 				if (disposed) return
 				if (doc.documentJson) {
 					try {
-						deserializeDocument(editor, doc.documentJson)
+						deserializeDocument(editor.store, doc.documentJson)
 					} catch (error) {
 						// Main detaches the file path so a later Save can't
 						// overwrite the real document with an empty canvas.
@@ -56,9 +65,11 @@ export function EditorPage() {
 				// Sync AND the save-snapshot handler start only after hydration:
 				// a Save answered before the document loaded would capture an
 				// empty canvas and overwrite the real file with it.
-				stopSync = startDocumentSync(editor)
+				sync = startDocumentSync(editor.store, syncTransport)
+				// Best-effort final flush when the window is going away.
+				window.addEventListener('pagehide', onPageHide)
 				offSnapshot = window.desktop.onInvoke('editor-get-snapshot', () =>
-					captureFullSnapshot(editor)
+					captureFullSnapshot(editor.store)
 				)
 			})
 			.catch((error) => console.error('Failed to load document:', error))
@@ -69,7 +80,8 @@ export function EditorPage() {
 			offRunScript()
 			stopDocumentScript()
 			offSnapshot?.()
-			stopSync?.()
+			window.removeEventListener('pagehide', onPageHide)
+			sync?.dispose()
 		}
 	}, [])
 

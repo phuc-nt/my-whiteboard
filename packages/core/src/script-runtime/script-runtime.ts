@@ -1,5 +1,5 @@
 import type { Editor } from 'tldraw'
-import { buildScriptHelpers } from '../agent/script-helpers'
+import { buildScriptHelpers } from '../exec/script-helpers'
 
 // Runs a document script in the renderer. Each run gets a fresh AbortController;
 // starting a new run aborts the previous one (its `signal` fires) so listeners
