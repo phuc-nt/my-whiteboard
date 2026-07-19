@@ -104,6 +104,20 @@ Example: draw a service architecture node:
 sh ${mywb} POST /api/doc/DOC_ID/exec 'const { createShapeId } = tldraw; editor.createShape({ id: createShapeId(), type: "service-node", x: 200, y: 200, props: { name: "auth-api", kind: "api", ownerTeam: "platform" } }); return { ok: true }'
 \`\`\`
 
+## Arrow relationships (calls vs depends-on)
+
+Arrows carry meaning via their \`meta\`. When you draw an arrow between two
+service-nodes, tag the relationship so an agent (or a drift check) can tell a
+call from a dependency:
+
+\`\`\`bash
+sh ${mywb} POST /api/doc/DOC_ID/exec 'const { createShapeId } = tldraw; const id = createShapeId(); editor.createShape({ id, type: "arrow", meta: { relation: "depends-on" } }); editor.createBinding({ type: "arrow", fromId: id, toId: "shape:FROM", props: { terminal: "start" } }); editor.createBinding({ type: "arrow", fromId: id, toId: "shape:TO", props: { terminal: "end" } }); return { ok: true }'
+\`\`\`
+
+Convention: \`meta.relation\` is one of \`'calls'\` or \`'depends-on'\`. Read it back
+from the arrow records (getShapes) to interpret the architecture. \`meta\` is a
+first-class record field, so it round-trips through .mywb like any other prop.
+
 ## Verify with records, not eyesight
 
 After a mutation, re-read shapes and check the records changed. Only take a

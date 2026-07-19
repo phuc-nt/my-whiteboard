@@ -23,6 +23,15 @@ describe('skill templates', () => {
 		expect(md.toLowerCase()).toContain('legacy fallback')
 	})
 
+	it('teaches the arrow relationship convention (meta.relation)', () => {
+		const md = renderSkillMarkdown(sj, mywb)
+		expect(md).toContain('meta.relation')
+		expect(md).toContain("'calls'")
+		expect(md).toContain("'depends-on'")
+		// Shows creating an arrow that carries the relation in meta.
+		expect(md).toContain('meta: { relation:')
+	})
+
 	it('documents the custom dev shapes', () => {
 		const md = renderSkillMarkdown(sj, mywb)
 		for (const shape of ['service-node', 'code-ref', 'mermaid-block']) {

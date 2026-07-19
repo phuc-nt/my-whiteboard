@@ -60,6 +60,24 @@ describe('desktop ↔ web round-trip on one file', () => {
 						meta: {},
 						props: { w: 220, h: 96, name: 'added-on-web', kind: 'web', repoUrl: '', ownerTeam: '' }
 					})
+				},
+				{
+					id: 'shape:web-arrow',
+					typeName: 'shape',
+					json: JSON.stringify({
+						id: 'shape:web-arrow',
+						typeName: 'shape',
+						type: 'arrow',
+						x: 0,
+						y: 0,
+						rotation: 0,
+						index: 'a4',
+						parentId: page.id,
+						isLocked: false,
+						opacity: 1,
+						meta: { relation: 'depends-on' },
+						props: {}
+					})
 				}
 			],
 			[]
@@ -78,10 +96,16 @@ describe('desktop ↔ web round-trip on one file', () => {
 		// --- desktop side: node reads the web-written file ---
 		const doc = await readMywbDocument(file)
 		const names = doc.records
-			.filter((r) => r.typeName === 'shape')
+			.filter((r) => r.typeName === 'shape' && JSON.parse(r.json).type === 'service-node')
 			.map((r) => JSON.parse(r.json).props.name)
 			.sort()
 		expect(names).toEqual(['added-on-web', 'keep-me', 'shared-lib'])
+		// An arrow's meta.relation (the calls/depends-on convention) survives the
+		// round-trip — meta is a first-class record field, no schema change needed.
+		const arrowWithRelation = doc.records.find(
+			(r) => r.typeName === 'shape' && JSON.parse(r.json).meta?.relation === 'depends-on'
+		)
+		expect(arrowWithRelation).toBeDefined()
 		// The 'lib' kind survived node → web → node unchanged.
 		const libNode = doc.records.find(
 			(r) => r.typeName === 'shape' && JSON.parse(r.json).props?.name === 'shared-lib'
