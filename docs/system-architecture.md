@@ -87,6 +87,27 @@ for embedded scripts; CSP `'unsafe-eval'` is scoped to a renderer that only ever
 loads the app's own bundle (no remote scripts; navigation blocked), with
 document *content* treated as data, never executed.
 
+## Long-term direction: hybrid, shared core (decided 2026-07-19)
+
+The target is a **shared core** package that runs on both desktop and web, with
+thin per-environment **adapters**. The MVP already keeps most core logic in the
+renderer (Electron-independent); the plan is to extract it cleanly rather than
+rewrite for web later.
+
+- **Shared core** (no Electron/browser assumptions): shape schemas + validation,
+  `.mywb` format, agent-exec semantics (protocol + serialize), document-script
+  runtime, document-sync (diff/snapshot).
+- **Desktop adapter** (current `src/main/*`): file system, `node:sqlite`,
+  localhost HTTP server, custom protocols, `fs.watch`.
+- **Web adapter** (future): OPFS / File System Access, WASM sqlite or a backend
+  store, WebSocket sync, an Agent Gateway relaying agent↔canvas (browsers can't
+  host a localhost server), and a script sandbox (iframe/worker — running
+  untrusted scripts in the app origin is a real XSS surface on the web).
+
+Decision axis: **where the engineer's agent runs.** Local agent → desktop's
+loopback API is the cheapest, zero-config path. Cloud-side agent → web + backend.
+The product serves both; web is the team/collaboration stage, not a replacement.
+
 ## Deferred (post-MVP)
 
 Multi-user sync, SSO, GitHub/CI integration, wireframe/issue-card shapes,

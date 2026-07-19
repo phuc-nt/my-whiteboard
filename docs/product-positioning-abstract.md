@@ -39,6 +39,17 @@ Engineer và team phát triển phần mềm trong công ty, đặc biệt nơi 
 - Lớp agent chạy localhost (HTTP + bearer token per-launch) như tldraw offline.
 - Multi-user sync, SSO, governance, tích hợp GitHub/CI: để giai đoạn sau, kiến trúc phải chừa đường (shape schema và API tầng store không giả định local).
 
+## Định hướng kiến trúc dài hạn (chốt 2026-07-19): Hybrid, tách core
+
+Sản phẩm KHÔNG chọn dứt khoát desktop-only hay web-only. Đích là **hybrid**: một **core dùng chung** (npm package) chạy được cả hai target, với các **adapter** riêng cho từng môi trường.
+
+- **Trục quyết định:** agent của engineer chạy ở đâu. Agent **local** (Claude Code/Codex/Cursor trên máy dev) → desktop fit nhất (localhost API zero-config). Agent **cloud-side** (CI drift-check, bot cập nhật diagram) → web + backend fit. Sản phẩm phục vụ cả hai, không hy sinh cái nào.
+- **Core dùng chung** (không phụ thuộc Electron/browser): shape schemas + validation, `.mywb` format, ngữ nghĩa agent-exec (protocol + serialize), document-script runtime, document-sync (diff/snapshot). Phần lớn đã nằm renderer-side trong MVP → chi phí tách là refactor có kiểm soát, không viết lại.
+- **Adapter Desktop** (đã có): file system + node:sqlite + localhost HTTP server + custom protocol + fs.watch.
+- **Adapter Web** (giai đoạn sau): OPFS/File System Access + WASM sqlite (hoặc backend store) + WebSocket sync + Agent Gateway (relay agent↔canvas) + script sandbox iframe/worker.
+
+**Nguyên tắc bảo toàn tùy chọn:** mọi thay đổi từ đây giữ ranh giới renderer↔main sạch, để khi cần web chỉ viết adapter chứ không viết lại core. Web là **đích của giai đoạn team/collab**, không thay thế desktop.
+
 ## Ràng buộc
 
 - tldraw SDK cần license thương mại để bỏ watermark — chi phí phải xác nhận với tldraw trước khi ship rộng.
