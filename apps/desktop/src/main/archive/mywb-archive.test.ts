@@ -7,7 +7,7 @@ import {
 	ARCHIVE_METADATA_FILE,
 	MYWB_FORMAT_VERSION,
 	WORKING_COPY_STATE_FILE
-} from '../../shared/mywb-format-types'
+} from '@mywb/core/format'
 import { extractMywbArchive, safeEntryPath } from './mywb-archive-reader'
 import { packDirectoryToMywbArchive } from './mywb-archive-writer'
 import { RecordsDatabase } from './records-database'

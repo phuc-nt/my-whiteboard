@@ -2,7 +2,7 @@ import { createHash } from 'crypto'
 import { app } from 'electron'
 import { readFile, readdir, writeFile } from 'fs/promises'
 import { join } from 'path'
-import { ARCHIVE_SCRIPT_DIR } from '../../shared/mywb-format-types'
+import { ARCHIVE_SCRIPT_DIR } from '@mywb/core/format'
 
 // A document script runs only if the user has consented to its exact bytes.
 // Consent is keyed by the sha256 digest of the whole script/ directory, so any

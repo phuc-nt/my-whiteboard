@@ -12,8 +12,8 @@
 		"dev": "npm run dev -w apps/desktop",
 		"start": "npm run start -w apps/desktop",
 		"build": "npm run build -w apps/desktop",
-		"typecheck": "npm run typecheck -w apps/desktop",
-		"test": "npm run test -w apps/desktop",
+		"typecheck": "npm run typecheck --workspaces --if-present",
+		"test": "npm run test --workspaces --if-present",
 		"e2e": "npm run e2e -w apps/desktop",
 		"build:mac": "npm run build:mac -w apps/desktop"
 	}

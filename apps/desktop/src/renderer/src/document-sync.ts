@@ -1,6 +1,6 @@
 import type { Editor, TLRecord } from 'tldraw'
 import { getSnapshot } from 'tldraw'
-import type { SerializedRecord } from '../../shared/mywb-format-types'
+import type { SerializedRecord } from '@mywb/core/format'
 
 // Streams document changes to the main process working copy so a crash never
 // loses more than the debounce window. Also serves the full-snapshot capture

@@ -7,7 +7,7 @@ import type {
 	StoreAssetResult
 } from '../shared/ipc-contract'
 import { MainToRenderer, RendererToMain } from '../shared/ipc-contract'
-import type { InitialSnapshotPayload, RecordsDiffPayload } from '../shared/mywb-format-types'
+import type { InitialSnapshotPayload, RecordsDiffPayload } from '@mywb/core/format'
 
 // Narrow, typed bridge — the renderer never sees Node or Electron APIs directly.
 

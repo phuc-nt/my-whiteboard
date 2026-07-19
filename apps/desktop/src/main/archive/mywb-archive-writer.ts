@@ -3,7 +3,7 @@ import { createWriteStream } from 'fs'
 import { readdir, rename, stat, unlink } from 'fs/promises'
 import { join, relative, sep } from 'path'
 import yazl from 'yazl'
-import { WORKING_COPY_STATE_FILE } from '../../shared/mywb-format-types'
+import { WORKING_COPY_STATE_FILE } from '@mywb/core/format'
 
 // Packs a working-copy directory into a .mywb zip archive.
 // Excluded from the archive: working-copy internals (state.json) and SQLite

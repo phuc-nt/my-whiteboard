@@ -1,3 +1,4 @@
+import type { ExecResult } from '@mywb/core/agent-protocol'
 import type { Editor } from 'tldraw'
 import * as tldraw from 'tldraw'
 import { buildScriptHelpers } from './script-helpers'
@@ -6,11 +7,7 @@ import { buildScriptHelpers } from './script-helpers'
 // point so the whole exec is one Cmd+Z for the user. Result is serialized to
 // plain JSON for IPC — non-serializable returns degrade to a string.
 
-export interface ExecResult {
-	success: boolean
-	result?: unknown
-	error?: string
-}
+export type { ExecResult }
 
 // A bare `import('tldraw')` inside exec code can't resolve (it never went
 // through the bundler), so exec code uses the injected `tldraw` binding

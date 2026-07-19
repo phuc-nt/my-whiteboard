@@ -1,7 +1,7 @@
 import type { BrowserWindow } from 'electron'
 import { watch, type FSWatcher } from 'fs'
 import { join } from 'path'
-import { ARCHIVE_SCRIPT_DIR } from '../../shared/mywb-format-types'
+import { ARCHIVE_SCRIPT_DIR } from '@mywb/core/format'
 import { scriptUrl } from '../app-protocols'
 import { invokeRenderer } from '../renderer-invoke'
 import { computeScriptDigest, isDigestTrusted, trustDigest } from './script-trust-store'

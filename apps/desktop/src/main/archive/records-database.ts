@@ -1,5 +1,5 @@
 import { DatabaseSync } from 'node:sqlite'
-import type { SerializedRecord } from '../../shared/mywb-format-types'
+import type { SerializedRecord } from '@mywb/core/format'
 
 // SQLite storage for tldraw records inside a working copy. One row per record;
 // incremental upserts keep crash recovery cheap even for large boards.

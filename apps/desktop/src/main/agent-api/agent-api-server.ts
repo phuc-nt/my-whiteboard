@@ -1,3 +1,10 @@
+import {
+	DOC_EXEC_PATTERN,
+	DOC_SCRIPT_STATUS_PATTERN,
+	DOC_SCRIPT_WORKSPACE_PATTERN,
+	parseCode,
+	safeSerialize
+} from '@mywb/core/agent-protocol'
 import { randomBytes, timingSafeEqual } from 'crypto'
 import { app } from 'electron'
 import { chmodSync, unlinkSync, writeFileSync } from 'fs'
@@ -36,21 +43,6 @@ async function readBody(req: IncomingMessage): Promise<string> {
 		chunks.push(chunk as Buffer)
 	}
 	return Buffer.concat(chunks).toString('utf8')
-}
-
-/** Parse code from a text/plain body or a JSON {"code":"..."} body. */
-function parseCode(body: string, contentType: string | undefined): { code: string } | { error: string } {
-	if (contentType?.includes('application/json')) {
-		try {
-			const parsed = JSON.parse(body)
-			if (typeof parsed?.code !== 'string') return { error: 'JSON body must have a string "code" field' }
-			return { code: parsed.code }
-		} catch {
-			return { error: 'Invalid JSON body' }
-		}
-	}
-	if (!body.trim()) return { error: 'Empty request body' }
-	return { code: body }
 }
 
 export class AgentApiServer {
@@ -163,19 +155,19 @@ export class AgentApiServer {
 			return
 		}
 
-		const execMatch = pathname.match(/^\/api\/doc\/([^/]+)\/exec$/)
+		const execMatch = pathname.match(DOC_EXEC_PATTERN)
 		if (req.method === 'POST' && execMatch) {
 			await this.#handleExec(req, res, decodeURIComponent(execMatch[1]))
 			return
 		}
 
-		const workspaceMatch = pathname.match(/^\/api\/doc\/([^/]+)\/script-workspace$/)
+		const workspaceMatch = pathname.match(DOC_SCRIPT_WORKSPACE_PATTERN)
 		if (req.method === 'POST' && workspaceMatch) {
 			await this.#handleScriptWorkspace(res, decodeURIComponent(workspaceMatch[1]))
 			return
 		}
 
-		const statusMatch = pathname.match(/^\/api\/doc\/([^/]+)\/script-status$/)
+		const statusMatch = pathname.match(DOC_SCRIPT_STATUS_PATTERN)
 		if (req.method === 'GET' && statusMatch) {
 			this.#handleScriptStatus(res, decodeURIComponent(statusMatch[1]))
 			return
@@ -263,14 +255,5 @@ export class AgentApiServer {
 				error: error instanceof Error ? error.message : String(error)
 			})
 		}
-	}
-}
-
-/** Drop values that can't survive JSON (functions, cycles, bigint). */
-function safeSerialize(value: unknown): unknown {
-	try {
-		return JSON.parse(JSON.stringify(value ?? null))
-	} catch {
-		return String(value)
 	}
 }

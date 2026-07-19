@@ -1,8 +1,8 @@
 import { app } from 'electron'
 import { readFile, writeFile } from 'fs/promises'
 import { join } from 'path'
-import type { RecentFiles } from '../shared/mywb-format-types'
-import { recentFilesSchema } from '../shared/mywb-format-types'
+import type { RecentFiles } from '@mywb/core/format'
+import { recentFilesSchema } from '@mywb/core/format'
 
 // Most-recently-used document paths for the File → Open Recent menu.
 

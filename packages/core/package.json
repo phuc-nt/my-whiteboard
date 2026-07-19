@@ -1,0 +1,22 @@
+{
+	"name": "@mywb/core",
+	"version": "0.1.0",
+	"description": "Environment-agnostic core of My Whiteboard: format schemas, agent protocol, shapes, sync, exec and script runtime",
+	"type": "module",
+	"private": true,
+	"exports": {
+		"./format": "./src/format/index.ts",
+		"./agent-protocol": "./src/agent-protocol/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run"
+	},
+	"dependencies": {
+		"zod": "^4.4.3"
+	},
+	"devDependencies": {
+		"typescript": "^5.9.0",
+		"vitest": "^4.1.10"
+	}
+}

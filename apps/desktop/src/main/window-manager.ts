@@ -2,7 +2,7 @@ import { is } from '@electron-toolkit/utils'
 import { BrowserWindow, screen, shell } from 'electron'
 import { basename, join } from 'path'
 import { RENDERER_INDEX_URL } from './app-protocols'
-import type { SessionWindow } from '../shared/mywb-format-types'
+import type { SessionWindow } from '@mywb/core/format'
 import type { WorkingCopy } from './working-copy-manager'
 
 export interface WindowState {

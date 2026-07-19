@@ -3,13 +3,13 @@ import { mkdir, readFile, stat } from 'fs/promises'
 import { dirname, join, normalize, sep } from 'path'
 import { pipeline } from 'stream/promises'
 import yauzl from 'yauzl'
-import type { MywbMetadata } from '../../shared/mywb-format-types'
+import type { MywbMetadata } from '@mywb/core/format'
 import {
 	ARCHIVE_DB_FILE,
 	ARCHIVE_METADATA_FILE,
 	MYWB_FORMAT_VERSION,
 	mywbMetadataSchema
-} from '../../shared/mywb-format-types'
+} from '@mywb/core/format'
 
 // Extracts a .mywb zip archive into a working-copy directory, then validates
 // the result. Entry names are untrusted input: reject anything that would

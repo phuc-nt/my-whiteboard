@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import { join } from 'path'
-import { ARCHIVE_SCRIPT_DIR } from '../../shared/mywb-format-types'
+import { ARCHIVE_SCRIPT_DIR } from '@mywb/core/format'
 
 // Exposes a document's live script/ directory so an agent can edit main.js
 // with its own file tools. Creates a starter template on first access.

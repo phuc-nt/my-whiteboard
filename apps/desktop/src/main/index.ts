@@ -7,7 +7,7 @@ import type {
 	StoreAssetResult
 } from '../shared/ipc-contract'
 import { RendererToMain } from '../shared/ipc-contract'
-import type { InitialSnapshotPayload, RecordsDiffPayload } from '../shared/mywb-format-types'
+import type { InitialSnapshotPayload, RecordsDiffPayload } from '@mywb/core/format'
 import { AgentApiServer } from './agent-api/agent-api-server'
 import { setAgentDocumentProvider } from './agent-api/agent-server-registry'
 import {
@@ -23,7 +23,7 @@ import {
 	runNow
 } from './document-scripts/document-script-coordinator'
 import { computeScriptDigest, isDigestTrusted, trustDigest } from './document-scripts/script-trust-store'
-import { ARCHIVE_SCRIPT_DIR } from '../shared/mywb-format-types'
+import { ARCHIVE_SCRIPT_DIR } from '@mywb/core/format'
 import { confirmCloseDirtyWindow, newDocument, openDocumentFromPath } from './document-actions'
 import { installApplicationMenu } from './menu-manager'
 import {

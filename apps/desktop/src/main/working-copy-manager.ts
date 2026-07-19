@@ -7,7 +7,7 @@ import type {
 	MywbMetadata,
 	RecordsDiffPayload,
 	WorkingCopyState
-} from '../shared/mywb-format-types'
+} from '@mywb/core/format'
 import {
 	ARCHIVE_ASSETS_DIR,
 	ARCHIVE_METADATA_FILE,
@@ -15,7 +15,7 @@ import {
 	MYWB_FORMAT_VERSION,
 	WORKING_COPY_STATE_FILE,
 	workingCopyStateSchema
-} from '../shared/mywb-format-types'
+} from '@mywb/core/format'
 import { RecordsDatabase } from './archive/records-database'
 import { extractMywbArchive } from './archive/mywb-archive-reader'
 import { packDirectoryToMywbArchive } from './archive/mywb-archive-writer'

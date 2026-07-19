@@ -1,8 +1,8 @@
 import { app, screen } from 'electron'
 import { readFile, writeFile } from 'fs/promises'
 import { join } from 'path'
-import type { AppSession, SessionWindow } from '../shared/mywb-format-types'
-import { appSessionSchema } from '../shared/mywb-format-types'
+import type { AppSession, SessionWindow } from '@mywb/core/format'
+import { appSessionSchema } from '@mywb/core/format'
 
 // session.json remembers the open windows across launches, plus a clean-exit
 // marker: launch flips it to false, a normal quit writes it back as true.
