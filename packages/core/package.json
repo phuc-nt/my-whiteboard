@@ -6,16 +6,27 @@
 	"private": true,
 	"exports": {
 		"./format": "./src/format/index.ts",
-		"./agent-protocol": "./src/agent-protocol/index.ts"
+		"./agent-protocol": "./src/agent-protocol/index.ts",
+		"./shapes": "./src/shapes/index.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit",
 		"test": "vitest run"
 	},
 	"dependencies": {
+		"mermaid": "^11.16.0",
 		"zod": "^4.4.3"
 	},
+	"peerDependencies": {
+		"react": "^19.2.7",
+		"react-dom": "^19.2.7",
+		"tldraw": "5.2.5"
+	},
 	"devDependencies": {
+		"@types/react": "^19.0.0",
+		"react": "^19.2.7",
+		"react-dom": "^19.2.7",
+		"tldraw": "5.2.5",
 		"typescript": "^5.9.0",
 		"vitest": "^4.1.10"
 	}

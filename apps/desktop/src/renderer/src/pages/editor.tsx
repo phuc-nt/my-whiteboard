@@ -8,7 +8,7 @@ import { documentAssetStore } from '../document-assets'
 import { startDocumentSync, captureFullSnapshot } from '../document-sync'
 import { deserializeDocument } from '../document-serialization'
 import { runDocumentScript, stopDocumentScript } from '../document-scripts/script-runtime'
-import { customShapeUtils } from '../shapes/custom-shapes-registry'
+import { customShapeUtils } from '@mywb/core/shapes'
 
 // Full-window tldraw editor. On mount it pulls the window's document from the
 // main process, starts streaming changes to the working copy, and serves the
