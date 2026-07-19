@@ -2,7 +2,7 @@
 
 **Tên:** My Whiteboard (`my-whiteboard`)
 **Ngày:** 2026-07-19
-**Trạng thái:** Draft — nền tảng cho plan MVP local-first
+**Trạng thái:** Chốt — MVP local-first đã ship (Stage 0); định hướng dài hạn "hybrid, tách core" áp dụng từ Stage 1 (xem [project-roadmap.md](project-roadmap.md))
 
 ## Một câu
 

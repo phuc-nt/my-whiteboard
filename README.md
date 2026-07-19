@@ -40,7 +40,8 @@ npm run build:mac  # unsigned universal macOS DMG → release/
 ## Architecture
 
 See [docs/system-architecture.md](docs/system-architecture.md) and
-[docs/codebase-summary.md](docs/codebase-summary.md).
+[docs/codebase-summary.md](docs/codebase-summary.md). Roadmap (hybrid,
+shared core): [docs/project-roadmap.md](docs/project-roadmap.md).
 
 ## Security note
 
