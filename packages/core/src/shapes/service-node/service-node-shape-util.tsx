@@ -47,6 +47,36 @@ const KIND_COLOR: Record<ServiceKind, string> = {
 	tool: '#64748b'
 }
 
+// Layout constants shared by the height calculation and the rendered card, so
+// the geometry (hit-test, indicator, arrow binding) matches what is drawn.
+const CARD_PADDING = 10
+const HEADER_HEIGHT = 22
+const ROW_HEIGHT = 18
+const NAME_LINE_HEIGHT = 20
+// Rough chars-per-line: name font is ~15px, badge eats some header width.
+const NAME_CHARS_PER_100PX = 11
+
+/**
+ * Minimum height that shows all of a service-node's content without clipping.
+ * Pure (no editor/DOM) so it is unit-testable and usable from getGeometry.
+ * Deliberately errs generous — better a little tall than a clipped repoUrl.
+ */
+export function computeServiceNodeMinHeight(props: {
+	w: number
+	name: string
+	repoUrl: string
+	ownerTeam: string
+}): number {
+	const charsPerLine = Math.max(6, Math.floor((props.w / 100) * NAME_CHARS_PER_100PX))
+	const nameLines = Math.max(1, Math.ceil(props.name.length / charsPerLine))
+	let height = CARD_PADDING * 2
+	// Header row grows with wrapped name lines beyond the first.
+	height += HEADER_HEIGHT + (nameLines - 1) * NAME_LINE_HEIGHT
+	if (props.ownerTeam) height += ROW_HEIGHT
+	if (props.repoUrl) height += ROW_HEIGHT
+	return Math.round(height)
+}
+
 export class ServiceNodeShapeUtil extends ShapeUtil<ServiceNodeShape> {
 	static override type = 'service-node' as const
 
@@ -60,11 +90,16 @@ export class ServiceNodeShapeUtil extends ShapeUtil<ServiceNodeShape> {
 	}
 
 	getDefaultProps(): ServiceNodeShape['props'] {
+		// h is a floor the user can grow by resizing; geometry/render never go
+		// below the content's min height regardless of this value.
 		return { w: 220, h: 96, name: 'service', kind: 'api', repoUrl: '', ownerTeam: '' }
 	}
 
 	getGeometry(shape: ServiceNodeShape) {
-		return new Rectangle2d({ width: shape.props.w, height: shape.props.h, isFilled: true })
+		// Never smaller than the content needs — a card authored with the old
+		// fixed h=96 still renders its repoUrl instead of clipping it.
+		const height = Math.max(shape.props.h, computeServiceNodeMinHeight(shape.props))
+		return new Rectangle2d({ width: shape.props.w, height, isFilled: true })
 	}
 
 	override canResize() {
@@ -72,8 +107,9 @@ export class ServiceNodeShapeUtil extends ShapeUtil<ServiceNodeShape> {
 	}
 
 	component(shape: ServiceNodeShape) {
-		const { name, kind, repoUrl, ownerTeam, w, h } = shape.props
+		const { name, kind, repoUrl, ownerTeam, w } = shape.props
 		const accent = KIND_COLOR[kind]
+		const h = Math.max(shape.props.h, computeServiceNodeMinHeight(shape.props))
 		return (
 			<HTMLContainer
 				style={{
@@ -126,8 +162,9 @@ export class ServiceNodeShapeUtil extends ShapeUtil<ServiceNodeShape> {
 	}
 
 	getIndicatorPath(shape: ServiceNodeShape) {
+		const height = Math.max(shape.props.h, computeServiceNodeMinHeight(shape.props))
 		const path = new Path2D()
-		path.roundRect(0, 0, shape.props.w, shape.props.h, 8)
+		path.roundRect(0, 0, shape.props.w, height, 8)
 		return path
 	}
 }
