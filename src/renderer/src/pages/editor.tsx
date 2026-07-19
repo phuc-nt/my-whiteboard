@@ -7,6 +7,7 @@ import { runExecCode } from '../agent/exec-code-handler'
 import { documentAssetStore } from '../document-assets'
 import { startDocumentSync, captureFullSnapshot } from '../document-sync'
 import { deserializeDocument } from '../document-serialization'
+import { customShapeUtils } from '../shapes/custom-shapes-registry'
 
 // Full-window tldraw editor. On mount it pulls the window's document from the
 // main process, starts streaming changes to the working copy, and serves the
@@ -71,6 +72,7 @@ export function EditorPage() {
 				colorScheme="system"
 				assetUrls={assetUrls}
 				assets={documentAssetStore}
+				shapeUtils={customShapeUtils}
 				onMount={handleMount}
 			/>
 		</div>
