@@ -21,6 +21,12 @@ describe('service-node props', () => {
 		expect(() => validateProps(ServiceNodeShapeUtil, valid)).not.toThrow()
 	})
 
+	it('accepts every service kind, including lib/app/tool', () => {
+		for (const kind of ['api', 'db', 'queue', 'cron', 'web', 'lib', 'app', 'tool']) {
+			expect(() => ServiceNodeShapeUtil.props.kind.validate(kind)).not.toThrow()
+		}
+	})
+
 	it('rejects an unknown kind', () => {
 		expect(() => ServiceNodeShapeUtil.props.kind.validate('bogus')).toThrow()
 	})

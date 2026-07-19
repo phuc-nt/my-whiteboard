@@ -5,7 +5,7 @@ import { HTMLContainer, Rectangle2d, ShapeUtil, T } from 'tldraw'
 // optional repo link + owning team. Props are structured data (not just a
 // drawing) so an agent can read/write the architecture, not pixels.
 
-export type ServiceKind = 'api' | 'db' | 'queue' | 'cron' | 'web'
+export type ServiceKind = 'api' | 'db' | 'queue' | 'cron' | 'web' | 'lib' | 'app' | 'tool'
 
 export interface ServiceNodeProps {
 	w: number
@@ -30,7 +30,10 @@ const KIND_LABEL: Record<ServiceKind, string> = {
 	db: 'Database',
 	queue: 'Queue',
 	cron: 'Cron',
-	web: 'Web'
+	web: 'Web',
+	lib: 'Library',
+	app: 'App',
+	tool: 'Tool'
 }
 
 const KIND_COLOR: Record<ServiceKind, string> = {
@@ -38,7 +41,10 @@ const KIND_COLOR: Record<ServiceKind, string> = {
 	db: '#7c3aed',
 	queue: '#d97706',
 	cron: '#0891b2',
-	web: '#059669'
+	web: '#059669',
+	lib: '#0d9488',
+	app: '#4f46e5',
+	tool: '#64748b'
 }
 
 export class ServiceNodeShapeUtil extends ShapeUtil<ServiceNodeShape> {
@@ -48,7 +54,7 @@ export class ServiceNodeShapeUtil extends ShapeUtil<ServiceNodeShape> {
 		w: T.number,
 		h: T.number,
 		name: T.string,
-		kind: T.literalEnum('api', 'db', 'queue', 'cron', 'web'),
+		kind: T.literalEnum('api', 'db', 'queue', 'cron', 'web', 'lib', 'app', 'tool'),
 		repoUrl: T.string,
 		ownerTeam: T.string
 	}

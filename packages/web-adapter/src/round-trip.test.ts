@@ -28,7 +28,11 @@ describe('desktop ↔ web round-trip on one file', () => {
 		const file = join(dir, 'board.mywb')
 		await buildMywbFixture(file, {
 			documentId: 'roundtrip',
-			serviceNodes: [{ name: 'keep-me', kind: 'api' }],
+			// Includes a 'lib' kind — the enum extension must survive the round-trip.
+			serviceNodes: [
+				{ name: 'keep-me', kind: 'api' },
+				{ name: 'shared-lib', kind: 'lib' }
+			],
 			script: { mainJs: 'export default () => {}\n', digest: 'digest-rt' }
 		})
 
@@ -77,7 +81,12 @@ describe('desktop ↔ web round-trip on one file', () => {
 			.filter((r) => r.typeName === 'shape')
 			.map((r) => JSON.parse(r.json).props.name)
 			.sort()
-		expect(names).toEqual(['added-on-web', 'keep-me'])
+		expect(names).toEqual(['added-on-web', 'keep-me', 'shared-lib'])
+		// The 'lib' kind survived node → web → node unchanged.
+		const libNode = doc.records.find(
+			(r) => r.typeName === 'shape' && JSON.parse(r.json).props?.name === 'shared-lib'
+		)!
+		expect(JSON.parse(libNode.json).props.kind).toBe('lib')
 
 		// Script dir + digest survived the web repack.
 		const out = await tempDir()
