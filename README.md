@@ -1,5 +1,7 @@
 # My Whiteboard
 
+[![ci](https://github.com/phuc-nt/my-whiteboard/actions/workflows/ci.yml/badge.svg)](https://github.com/phuc-nt/my-whiteboard/actions/workflows/ci.yml)
+
 Local-first whiteboard for engineers, built on the [tldraw SDK](https://tldraw.dev),
 where coding agents are first-class users. Draw diagrams and wireframes, and let
 Claude Code / Codex / Cursor / Gemini read and edit the canvas through a local API
