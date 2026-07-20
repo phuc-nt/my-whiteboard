@@ -1,0 +1,75 @@
+# Two tiers: `fast` gives every push a typecheck + unit signal in minutes,
+# `e2e` runs the real Electron / browser / VS Code suites behind it. Splitting
+# them keeps an environment hiccup in the heavy job from hiding the cheap
+# signal. Every step calls an existing root script, so the scripts stay the
+# single source of truth for how the project is built and tested.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  fast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  e2e:
+    needs: [fast]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # Electron and VS Code both need a display on Linux.
+      - name: Install xvfb
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
+      # ~270MB of VS Code per run without this.
+      - name: Cache VS Code test install
+        uses: actions/cache@v4
+        with:
+          path: apps/vscode/.vscode-test
+          key: vscode-test-${{ runner.os }}
+
+      - name: Desktop e2e (Electron)
+        run: xvfb-run -a npm run e2e
+
+      # Each suite reports even when an earlier one failed — one red suite
+      # should not hide the state of the others.
+      - name: Web e2e
+        if: always()
+        run: npm run e2e:web
+
+      - name: Relay e2e
+        if: always()
+        run: npm run e2e:relay
+
+      - name: VS Code extension e2e
+        if: always()
+        run: xvfb-run -a npm run e2e:vscode
+
+      - name: Upload Playwright reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-reports
+          path: |
+            apps/*/playwright-report/
+            apps/*/test-results/
+          if-no-files-found: ignore
+          retention-days: 7

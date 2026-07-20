@@ -33,8 +33,8 @@
 		"build:webview": "vite build",
 		"build:ext": "tsc -p tsconfig.ext.json",
 		"typecheck": "tsc --noEmit -p tsconfig.ext.json && tsc --noEmit -p webview/tsconfig.json",
-		"test": "npm run build && node ./dist/test/run-tests.js",
-		"package:vsix": "vsce package --no-dependencies -o my-whiteboard.vsix"
+		"package:vsix": "vsce package --no-dependencies -o my-whiteboard.vsix",
+		"test:integration": "npm run build && node ./dist/test/run-tests.js"
 	},
 	"dependencies": {
 		"@mywb/core": "*",
