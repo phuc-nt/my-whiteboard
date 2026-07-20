@@ -99,6 +99,16 @@ drift-check cho repo mới = 1 lệnh. Ops trong app live (align/distribute qua
 exec) vẫn chờ evidence phase 5 Moat Proof.
 Plan: [plans/260720-0918-scaffold-headless-llms-txt/](../plans/260720-0918-scaffold-headless-llms-txt/plan.md).
 
+## Interop v1 (Mermaid bridge) + MCP v2 ✅ (done 2026-07-20)
+
+Quyết định 2026-07-20 (research + brainstorm nhóm use case A): board sống
+trong README qua `mywb file mermaid` (flowchart default + c4, export
+deterministic từ core; import KHÔNG parser — recipe dạy agent dịch mermaid →
+model → `file scaffold`); MCP v2 thêm `scaffold_board` + `read_shapes`
+detail summary|full (pattern BlurryShape, default full giữ nguyên). README
+repo giờ nhúng diagram regen 1 lệnh từ chính board.
+Plan: [plans/260720-1049-interop-v1-mermaid-bridge-mcp-v2/](../plans/260720-1049-interop-v1-mermaid-bridge-mcp-v2/plan.md).
+
 ## Stage "Moat Proof" — diagram-as-review chạy thật 🔶 (in-flight 2026-07-20)
 
 Phase 1 ✅ (CLI vendorable qua dynamic-import mcp + recipe vendor cả dist/);
