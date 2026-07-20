@@ -6,7 +6,8 @@
 	"private": true,
 	"exports": {
 		"./web-archive": "./src/web-archive/index.ts",
-		"./wasm-sqlite-store": "./src/wasm-sqlite-store/index.ts"
+		"./wasm-sqlite-store": "./src/wasm-sqlite-store/index.ts",
+		"./editor-bridge": "./src/editor-bridge/index.ts"
 	},
 	"scripts": {
 		"typecheck": "tsc --noEmit",
@@ -22,6 +23,7 @@
 		"@types/node": "^25.0.0",
 		"@types/sql.js": "^1.4.9",
 		"typescript": "^5.9.0",
-		"vitest": "^4.1.10"
+		"vitest": "^4.1.10",
+		"tldraw": "5.2.5"
 	}
 }
