@@ -45,6 +45,26 @@ describe('readMywbDocument', () => {
 		const names = shapeRecords.map((r) => JSON.parse(r.json).props.name).sort()
 		expect(names).toEqual(['checkout-api', 'orders-db'])
 	})
+
+	it('builds fixtures past 8 shapes with valid, unique fractional indexes', async () => {
+		// Naive `a${n}` index generation broke on the 9th shape ("a10" is not a
+		// valid IndexKey) — real architecture boards commonly exceed 8 nodes.
+		const dir = await tempDir()
+		const file = join(dir, 'board.mywb')
+		await buildMywbFixture(file, {
+			documentId: 'doc-many-nodes',
+			serviceNodes: Array.from({ length: 12 }, (_, i) => ({
+				name: `svc-${i}`,
+				kind: 'lib' as const
+			}))
+		})
+
+		const doc = await readMywbDocument(file)
+		const shapeRecords = doc.records.filter((r) => r.typeName === 'shape')
+		expect(shapeRecords).toHaveLength(12)
+		const indexes = shapeRecords.map((r) => JSON.parse(r.json).index as string)
+		expect(new Set(indexes).size).toBe(12)
+	})
 })
 
 describe('applyRecordChanges', () => {

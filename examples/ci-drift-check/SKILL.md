@@ -42,6 +42,10 @@ which kind.
    `code-ref` files and line ranges, called services actually referenced.
 3. Classify each claim: `ok`, `drifted` (evidence contradicts), or
    `unverifiable` (no evidence either way — say so, do not guess).
+   Also check the reverse direction — dependencies in the code that the
+   diagram omits — but before flagging a missing edge, verify it is a
+   *runtime* dependency: `devDependencies` and imports that appear only in
+   tests/e2e are not architecture edges and must not be reported as drift.
 4. Report only `drifted` and `unverifiable`, each with the shape `id`, the
    claim, and the evidence (file paths). No findings → say the diagram is in
    sync; do not invent drift.

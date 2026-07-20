@@ -6,7 +6,7 @@ import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { IndexKey } from 'tldraw'
-import { createShapeId } from 'tldraw'
+import { createShapeId, getIndexAbove } from 'tldraw'
 import { packDirectoryToMywbArchive } from '../archive/mywb-archive-writer'
 import { RecordsDatabase } from '../archive/records-database'
 import { createHeadlessStore } from './create-headless-store'
@@ -39,15 +39,22 @@ export function makeServiceNodeRecord(
 ): Record<string, unknown> {
 	const page = existingRecords.find((r) => r.typeName === 'page')
 	if (!page) throw new Error('document has no page record')
-	const shapeCount = existingRecords.filter((r) => r.typeName === 'shape').length
+	const shapes = existingRecords.filter((r) => r.typeName === 'shape')
+	// Fractional index keys sort lexicographically; naive `a${n}` breaks at the
+	// 9th shape ("a10" is not a valid key), so derive the next key from the
+	// current topmost one. Records are serialized — the index lives inside json.
+	const topIndex = shapes
+		.map((s) => (JSON.parse(s.json) as { index: IndexKey }).index)
+		.sort()
+		.at(-1)
 	return {
 		id: createShapeId(),
 		typeName: 'shape',
 		type: 'service-node',
-		x: 96 + shapeCount * 260,
+		x: 96 + shapes.length * 260,
 		y: 96,
 		rotation: 0,
-		index: `a${shapeCount + 2}` as IndexKey,
+		index: topIndex ? getIndexAbove(topIndex) : ('a1' as IndexKey),
 		parentId: page.id,
 		isLocked: false,
 		opacity: 1,
