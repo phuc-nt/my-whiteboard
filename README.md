@@ -47,6 +47,9 @@ npm run build:mac  # unsigned universal macOS DMG → apps/desktop/release/
   `claude mcp add mywb -- node apps/cli/dist/cli.js mcp`.
 - **Custom shapes** — `service-node`, `code-ref`, `mermaid-block` carry
   structured, agent-readable data for architecture and code-reference diagrams.
+- **VS Code extension** — open and edit `.mywb` boards on a full canvas inside
+  VS Code ([apps/vscode](apps/vscode/README.md); build the `.vsix` with
+  `npm run package:vsix -w apps/vscode`).
 - **Document scripts** — `script/main.js` inside a file runs on open (after
   sha256-digest consent), enabling durable interactive behavior.
 

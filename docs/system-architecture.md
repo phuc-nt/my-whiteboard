@@ -3,8 +3,10 @@
 **My Whiteboard** — local-first Electron + tldraw app, built as an npm
 workspaces monorepo: a shared environment-agnostic core (`@mywb/core`), a
 desktop adapter (`apps/desktop`: main/preload/renderer), a web adapter
-(`packages/web-adapter`) behind the web app (`apps/web`), a headless CLI
-(`apps/cli`, bin `mywb`), and a read-only Agent Gateway (`services/agent-relay`).
+(`packages/web-adapter`) behind the web app (`apps/web`) and the VS Code
+custom editor (`apps/vscode` — edits `.mywb` on a canvas in a webview via the
+shared `editor-bridge`), a headless CLI (`apps/cli`, bin `mywb`), and a
+read-only Agent Gateway (`services/agent-relay`).
 The desktop app remains a single process tree; its only network surface is the
 loopback Agent API.
 

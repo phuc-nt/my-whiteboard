@@ -4,9 +4,10 @@
 > agents are first-class users: the canvas is structured data, read and edited
 > by code over a local API — never by screenshots.
 
-Desktop app (Electron), single-user, portable `.mywb` files. Agents connect
-through a localhost HTTP API, an MCP server (`mywb mcp`), or fully headless
-through the `mywb file` CLI.
+Desktop app (Electron), single-user, portable `.mywb` files; a VS Code
+extension (apps/vscode) opens and edits the same files in-editor. Agents
+connect through a localhost HTTP API, an MCP server (`mywb mcp`), or fully
+headless through the `mywb file` CLI.
 
 ## Docs
 

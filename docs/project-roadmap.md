@@ -109,6 +109,19 @@ detail summary|full (pattern BlurryShape, default full giữ nguyên). README
 repo giờ nhúng diagram regen 1 lệnh từ chính board.
 Plan: [plans/260720-1049-interop-v1-mermaid-bridge-mcp-v2/](../plans/260720-1049-interop-v1-mermaid-bridge-mcp-v2/plan.md).
 
+## VS Code Extension MVP — edit + save `.mywb` in-editor ✅ (done 2026-07-20)
+
+Quyết định 2026-07-20 (brainstorm ràng buộc "không phụ thuộc nợ manual"; user
+chọn VS Code MVP thay CI hardening — CI hardening thành ưu tiên kế tiếp):
+`apps/vscode` — CustomEditorProvider mở/sửa/lưu `.mywb` trên canvas tldraw
+trong webview (CSP + wasm-unsafe-eval cho sql.js), bytes qua postMessage,
+save/backup/revert chuẩn VS Code; `editor-bridge` extract từ apps/web về
+`@mywb/web-adapter` dùng chung; `.vsix` 3.5MB build bằng vsce; 5 integration
+tests trên VS Code thật (@vscode/test-electron) với board thật. KHÔNG chạy
+document scripts trong webview, KHÔNG agent API mới. Marketplace publish =
+việc tay (cần publisher account).
+Plan: [plans/260720-1320-vscode-extension-mvp-edit-save/](../plans/260720-1320-vscode-extension-mvp-edit-save/plan.md).
+
 ## Stage "Moat Proof" — diagram-as-review chạy thật 🔶 (in-flight 2026-07-20)
 
 Phase 1 ✅ (CLI vendorable qua dynamic-import mcp + recipe vendor cả dist/);

@@ -44,6 +44,11 @@ apps/desktop/                # Electron adapter (electron-vite + React)
 apps/web/                    # My Whiteboard on the web (vite + React): open/save .mywb via File
                              #   System Access (Chromium) or download/upload fallback; canvas from core
 
+apps/vscode/                 # VS Code custom editor for .mywb: tldraw canvas in a webview
+                             #   (bytes over postMessage, save/backup/revert contract); shares
+                             #   @mywb/web-adapter/editor-bridge with apps/web; .vsix via vsce;
+                             #   integration tests download a real VS Code (@vscode/test-electron)
+
 services/agent-relay/        # my-whiteboard-agent-relay — read-only Agent Gateway: a web tab
                              #   connects out over WebSocket + token; agents POST /api/read (list/
                              #   getShapes/getBindings). NO exec route by design (that is Stage 2c)
