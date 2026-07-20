@@ -1,4 +1,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { richTextToPlainText } from '@mywb/core/exec'
+import type { BoardModel } from '@mywb/node-adapter/headless-document'
+import { buildBoardFromModel } from '@mywb/node-adapter/headless-document'
 import { z } from 'zod'
 import {
 	AppNotRunningError,
@@ -74,18 +77,40 @@ export function registerMywbTools(server: McpServer): void {
 	server.registerTool(
 		'read_shapes',
 		{
-			description: 'Read the shapes on the current page of an open document (raw tldraw records).',
-			inputSchema: z.object({ documentId: z.string() })
+			description:
+				'Read the shapes on the current page of an open document. detail "full" (default) returns raw tldraw records; "summary" returns just {id, type, name?, text?, x, y, w?, h?} per shape — much cheaper on large boards.',
+			inputSchema: z.object({
+				documentId: z.string(),
+				detail: z.enum(['summary', 'full']).optional()
+			})
 		},
-		async ({ documentId }) => {
+		async ({ documentId, detail }) => {
 			try {
-				return jsonResult(
-					unwrap(
-						await withApp(serverJson, (info) =>
-							runSearch(info, `return await api.getShapes(${JSON.stringify(documentId)})`)
-						)
+				const page = unwrap(
+					await withApp(serverJson, (info) =>
+						runSearch(info, `return await api.getShapes(${JSON.stringify(documentId)})`)
 					)
-				)
+				) as { shapes?: Array<Record<string, unknown>> }
+				if (detail !== 'summary') return jsonResult(page)
+				const shapes = (page.shapes ?? []).map((shape) => {
+					const props = (shape.props ?? {}) as Record<string, unknown>
+					// tldraw builtin shapes carry content as ProseMirror richText,
+					// not a plain text prop — flatten it so summary items keep
+					// their words.
+					const text =
+						typeof props.text === 'string' ? props.text : richTextToPlainText(props.richText)
+					return {
+						id: shape.id,
+						type: shape.type,
+						...(typeof props.name === 'string' ? { name: props.name } : {}),
+						...(text ? { text } : {}),
+						x: shape.x,
+						y: shape.y,
+						...(typeof props.w === 'number' ? { w: props.w } : {}),
+						...(typeof props.h === 'number' ? { h: props.h } : {})
+					}
+				})
+				return jsonResult({ shapes })
 			} catch (error) {
 				return errorResult(error)
 			}
@@ -128,6 +153,44 @@ export function registerMywbTools(server: McpServer): void {
 				) as string
 				const base64 = dataUrl.includes(',') ? dataUrl.slice(dataUrl.indexOf(',') + 1) : dataUrl
 				return { content: [{ type: 'image', data: base64, mimeType: 'image/png' }] }
+			} catch (error) {
+				return errorResult(error)
+			}
+		}
+	)
+
+	server.registerTool(
+		'scaffold_board',
+		{
+			description:
+				'Build a complete architecture board (.mywb file) from a declarative model, headlessly — the app does not need the document open. Writes to targetPath on this machine (same trust model as exec).',
+			inputSchema: z.object({
+				model: z.object({
+					title: z.string().optional(),
+					documentId: z.string().optional(),
+					components: z.array(
+						z.object({
+							name: z.string(),
+							kind: z.string(),
+							repoUrl: z.string().optional(),
+							ownerTeam: z.string().optional()
+						})
+					),
+					edges: z.array(
+						z.object({ from: z.string(), to: z.string(), relation: z.string() })
+					)
+				}),
+				targetPath: z.string()
+			})
+		},
+		async ({ model, targetPath }) => {
+			try {
+				await buildBoardFromModel(targetPath, model as BoardModel)
+				return jsonResult({
+					target: targetPath,
+					components: model.components.length,
+					edges: model.edges.length
+				})
 			} catch (error) {
 				return errorResult(error)
 			}

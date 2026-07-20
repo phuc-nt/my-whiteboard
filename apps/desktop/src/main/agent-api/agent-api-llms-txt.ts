@@ -24,10 +24,11 @@ bearer token from ${serverJsonPath} (send "authorization: Bearer <token>").
 
 ## Other agent surfaces
 
-- MCP: \`mywb mcp\` (stdio) exposes list_documents, read_shapes,
-  read_bindings, screenshot, exec — add with \`claude mcp add mywb\`
-- CLI headless: \`mywb file read|apply|scaffold\` works on .mywb files with no
-  app running; \`mywb app docs|search|exec\` talks to this server
+- MCP: \`mywb mcp\` (stdio) exposes list_documents, read_shapes (full or
+  summary detail), read_bindings, screenshot, exec, scaffold_board — add with
+  \`claude mcp add mywb\`
+- CLI headless: \`mywb file read|apply|scaffold|mermaid\` works on .mywb files
+  with no app running; \`mywb app docs|search|exec\` talks to this server
 - Document format: .mywb = zip of sqlite records + media + optional script/
 `
 }

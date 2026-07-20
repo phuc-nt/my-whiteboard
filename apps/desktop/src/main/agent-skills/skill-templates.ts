@@ -30,10 +30,12 @@ claude mcp add mywb -- node <repo>/apps/cli/dist/cli.js mcp
 claude mcp add mywb -- mywb mcp
 \`\`\`
 
-Tools: \`list_documents\`, \`read_shapes({ documentId })\`,
-\`read_bindings({ documentId })\`, \`screenshot({ documentId })\`,
-\`exec({ documentId, code })\`. The exec tool runs JS against the live editor,
-same semantics as the shell paths below.
+Tools: \`list_documents\`, \`read_shapes({ documentId, detail? })\` (detail
+"summary" is much cheaper on large boards), \`read_bindings({ documentId })\`,
+\`screenshot({ documentId })\`, \`exec({ documentId, code })\`, and
+\`scaffold_board({ model, targetPath })\` to build a board file headlessly.
+The exec tool runs JS against the live editor, same semantics as the shell
+paths below.
 
 ## Server
 

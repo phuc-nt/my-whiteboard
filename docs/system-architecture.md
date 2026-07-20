@@ -68,7 +68,8 @@ state, so the server imports no window internals.
 the bundled sh skill helper, `mywb app docs|search|exec` (CLI live-mode talking
 to the running app), and `mywb mcp` — a stdio **MCP server** (`apps/cli`) that
 exposes the same API as Model Context Protocol tools (`list_documents`,
-`read_shapes`, `read_bindings`, `screenshot`, `exec`) so any MCP client connects
+`read_shapes` — full/summary detail, `read_bindings`, `screenshot`, `exec`,
+plus headless `scaffold_board`) so any MCP client connects
 with `claude mcp add mywb`. The MCP server is a thin proxy; it adds no new
 network surface beyond the loopback API.
 
