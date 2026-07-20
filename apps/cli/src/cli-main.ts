@@ -5,6 +5,7 @@ import { parseArgs } from 'node:util'
 import { runAppDocs, runAppExec, runAppSearch } from './app-commands'
 import { runFileApply } from './file-apply-command'
 import { runFileRead } from './file-read-command'
+import { runFileScaffold } from './file-scaffold-command'
 
 // Companion CLI to the desktop app. `file` works on .mywb files headlessly;
 // `app` talks to the RUNNING desktop app over its localhost agent API.
@@ -16,6 +17,10 @@ const USAGE = `Usage:
   mywb file apply <path.mywb> <changes.json>
                                         Apply {"put":[record...],"removed":[id...]} record-level
                                         changes, validated against the app's shape schemas
+  mywb file scaffold <model.json> <path.mywb>
+                                        Build an architecture board from a model:
+                                        {"title"?,"documentId"?,"components":[{name,kind,...}],
+                                        "edges":[{from,to,relation}]}
   mywb app docs                         List documents open in the running app (JSON)
   mywb app search [<js>|-]              Run read-only JS in the app's search context
                                         (api.getDocs/getShapes/...); code from arg or stdin
@@ -69,6 +74,10 @@ async function main(): Promise<void> {
 		}
 		if (command === 'apply' && rest.length === 2) {
 			await runFileApply(rest[0], rest[1])
+			return
+		}
+		if (command === 'scaffold' && rest.length === 2) {
+			await runFileScaffold(rest[0], rest[1])
 			return
 		}
 		usageExit(2)

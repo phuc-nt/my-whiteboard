@@ -1,15 +1,10 @@
-import { MYWB_FORMAT_VERSION, mywbMetadataSchema } from '@mywb/core/format'
 import type { SerializedRecord } from '@mywb/core/format'
 import { captureFullSnapshot } from '@mywb/core/sync'
 import type { ServiceKind } from '@mywb/core/shapes'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import type { IndexKey } from 'tldraw'
 import { createShapeId, getIndexAbove } from 'tldraw'
-import { packDirectoryToMywbArchive } from '../archive/mywb-archive-writer'
-import { RecordsDatabase } from '../archive/records-database'
 import { createHeadlessStore } from './create-headless-store'
+import { writeMywbArchiveFromRecords } from './write-mywb-archive'
 
 // Builds real .mywb files through the same writer + sqlite + store schema the
 // app uses — fixtures for tests and the CI drift-check example, never
@@ -80,33 +75,9 @@ export async function buildMywbFixture(
 		store.put([makeServiceNodeRecord(seed, snapshot.records) as never])
 	}
 	const { records, schemaJson } = captureFullSnapshot(store)
-
-	const workDir = await mkdtemp(join(tmpdir(), 'mywb-fixture-'))
-	try {
-		const db = new RecordsDatabase(join(workDir, 'db.sqlite'))
-		try {
-			db.replaceAll(records, schemaJson)
-			db.checkpoint()
-		} finally {
-			db.close()
-		}
-
-		const metadata = mywbMetadataSchema.parse({
-			formatVersion: MYWB_FORMAT_VERSION,
-			appVersion: '0.0.0-fixture',
-			documentId: options.documentId ?? 'fixture-doc',
-			createdAt: new Date().toISOString(),
-			...(options.script ? { scriptDigest: options.script.digest } : {})
-		})
-		await writeFile(join(workDir, 'metadata.json'), JSON.stringify(metadata, null, 2))
-		await mkdir(join(workDir, 'assets'))
-		if (options.script) {
-			await mkdir(join(workDir, 'script'))
-			await writeFile(join(workDir, 'script', 'main.js'), options.script.mainJs)
-		}
-
-		await packDirectoryToMywbArchive(workDir, targetPath)
-	} finally {
-		await rm(workDir, { recursive: true, force: true })
-	}
+	await writeMywbArchiveFromRecords(records, schemaJson, targetPath, {
+		documentId: options.documentId ?? 'fixture-doc',
+		appVersion: '0.0.0-fixture',
+		script: options.script
+	})
 }

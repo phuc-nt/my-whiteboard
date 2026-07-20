@@ -50,6 +50,13 @@ which kind.
    claim, and the evidence (file paths). No findings → say the diagram is in
    sync; do not invent drift.
 
+## Creating a board from scratch (when asked to bootstrap)
+
+Prefer `file scaffold` over hand-building records: write a model JSON
+(`components` with `name`/`kind`/`repoUrl`, `edges` with
+`from`/`to`/`relation`) and run
+`node <cli.js> file scaffold model.json <board.mywb>`.
+
 ## Updating the diagram (optional, when asked to fix)
 
 There is no patch API. To change one prop: take the full `record` from

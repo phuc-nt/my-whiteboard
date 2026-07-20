@@ -12,6 +12,23 @@ provides data access (`mywb file read/apply`).
 - `sample-board.json` — seeds for a demo board (includes deliberate drift bait:
   services and repo URLs that won't match your codebase)
 
+## Bootstrap a board from a model
+
+Onboarding a repo no longer needs a drawing session. Describe the architecture
+as JSON and scaffold the board headlessly:
+
+```bash
+node apps/cli/dist/cli.js file scaffold model.json docs/architecture.mywb
+# model.json:
+# { "title": "my-app — architecture", "documentId": "my-app-architecture",
+#   "components": [{ "name": "web ui", "kind": "web", "repoUrl": "src/app" }, ...],
+#   "edges": [{ "from": "web ui", "to": "api", "relation": "calls" }, ...] }
+```
+
+Nodes are laid out by kind (entry surfaces → api → libs → storage); arrows are
+bound to both endpoints and carry `meta.relation`. Open the result in the app
+to fine-tune, then commit.
+
 ## Try it locally
 
 ```bash
