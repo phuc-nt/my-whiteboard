@@ -22,6 +22,15 @@ test('readme is served without a token', async () => {
 	expect(await res.text()).toContain('My Whiteboard Canvas API')
 })
 
+test('llms.txt is served without a token and points at the readme', async () => {
+	const res = await fetch(`${api.base}/llms.txt`)
+	expect(res.status).toBe(200)
+	expect(res.headers.get('content-type')).toContain('text/plain')
+	const text = await res.text()
+	expect(text.split('\n')[0]).toMatch(/^# /)
+	expect(text).toContain('/readme')
+})
+
 test('mutating requests without a token are rejected', async () => {
 	const res = await fetch(`${api.base}/api/search`, {
 		method: 'POST',

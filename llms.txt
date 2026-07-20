@@ -1,0 +1,33 @@
+# My Whiteboard
+
+> Local-first whiteboard for engineers built on the tldraw SDK, where coding
+> agents are first-class users: the canvas is structured data, read and edited
+> by code over a local API — never by screenshots.
+
+Desktop app (Electron), single-user, portable `.mywb` files. Agents connect
+through a localhost HTTP API, an MCP server (`mywb mcp`), or fully headless
+through the `mywb file` CLI.
+
+## Docs
+
+- [README](README.md): what the product is, dev commands, agent API summary
+- [Product positioning](docs/product-positioning-abstract.md): problem, moat,
+  long-term hybrid architecture (Vietnamese)
+- [System architecture](docs/system-architecture.md): monorepo layout, core vs
+  adapters, agent surfaces
+- [Codebase summary](docs/codebase-summary.md): package-by-package map
+- [Roadmap](docs/project-roadmap.md): shipped stages and decisions
+
+## Agent integration
+
+- [CI drift-check example](examples/ci-drift-check/README.md): keep a `.mywb`
+  architecture diagram honest against the code on every PR
+- [Drift-check agent skill](examples/ci-drift-check/SKILL.md): shape
+  semantics, drift procedure, scaffold/update patterns
+- Runtime: a running app serves `GET /llms.txt` and `GET /readme` on its
+  localhost agent API (port and bearer token in `server.json`)
+
+## Optional
+
+- [Architecture board](docs/architecture.mywb): this repo's own diagram as a
+  `.mywb` file — read it with `mywb file read docs/architecture.mywb --json`

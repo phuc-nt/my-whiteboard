@@ -17,6 +17,7 @@ import {
 	getScriptStatusForDocument,
 	openScriptWorkspaceForDocument
 } from './agent-server-registry'
+import { getAgentApiLlmsTxt } from './agent-api-llms-txt'
 import { getAgentApiReadme } from './agent-api-readme'
 import { appendRequestLog, getRequestLogPath } from './request-log-writer'
 import { runSearchCode } from './search-api-context'
@@ -138,8 +139,15 @@ export class AgentApiServer {
 		}
 
 		if (req.method === 'GET' && (pathname === '/' || pathname === '/readme')) {
-			res.writeHead(200, { 'Content-Type': 'text/plain' })
+			res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' })
 			res.end(getAgentApiReadme(serverJsonPath()))
+			return
+		}
+
+		// llmstxt.org index — same trust level as the readme: static docs only.
+		if (req.method === 'GET' && pathname === '/llms.txt') {
+			res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' })
+			res.end(getAgentApiLlmsTxt(serverJsonPath()))
 			return
 		}
 

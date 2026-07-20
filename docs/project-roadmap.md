@@ -83,6 +83,27 @@ Board `docs/architecture.mywb` đã sửa đúng kind (lib/app/tool cho core/ada
 app cho desktop+web, tool cho CLI, api cho relay) sau khi 6 backlog fixes thêm
 kind mới — patch record-level qua `mywb file apply`, render verify trong app.
 
+## Scaffold headless v1 + llms.txt ✅ (done 2026-07-20)
+
+Quyết định 2026-07-20 (stage-map session, sau autonomous pre-work Moat Proof):
+evidence từ việc phải viết generator tay ~100 dòng để draft 2 board đầu →
+productize thành `mywb file scaffold <model.json> <board.mywb>`
+(`buildBoardFromModel` trong node-adapter: nodes layout theo kind, title,
+arrows 2-binding + meta.relation, store schema thật). Kèm chuẩn hoá agent docs
+llmstxt.org: `llms.txt` repo root + `GET /llms.txt` trên agent API. Onboarding
+drift-check cho repo mới = 1 lệnh. Ops trong app live (align/distribute qua
+exec) vẫn chờ evidence phase 5 Moat Proof.
+Plan: [plans/260720-0918-scaffold-headless-llms-txt/](../plans/260720-0918-scaffold-headless-llms-txt/plan.md).
+
+## Stage "Moat Proof" — diagram-as-review chạy thật 🔶 (in-flight 2026-07-20)
+
+Phase 1 ✅ (CLI vendorable qua dynamic-import mcp + recipe vendor cả dist/);
+autonomous pre-work ✅ (drift-check run #1: 0 drift, 2 false-positive hụt →
+guard vào SKILL; 2 board draft headless; branch `feat/diagram-drift-check`
+sẵn trong my-db-mate + my-crew, chưa push). Chờ user: review board trong app,
+thêm secret `ANTHROPIC_API_KEY`, push PR → phase 5 đo metrics.
+Plan: [plans/260720-0438-moat-proof-diagram-as-review-ci/](../plans/260720-0438-moat-proof-diagram-as-review-ci/plan.md).
+
 ## Stage 2c — Exec-remote + script sandbox trên web (ứng viên, demote 2026-07-19)
 
 Gateway exec (agent chạy code trên canvas web qua relay) + script sandbox
