@@ -4,6 +4,7 @@
 import { parseArgs } from 'node:util'
 import { runAppDocs, runAppExec, runAppSearch } from './app-commands'
 import { runFileApply } from './file-apply-command'
+import { MERMAID_SYNTAXES, runFileMermaid } from './file-mermaid-command'
 import { runFileRead } from './file-read-command'
 import { runFileScaffold } from './file-scaffold-command'
 
@@ -21,6 +22,9 @@ const USAGE = `Usage:
                                         Build an architecture board from a model:
                                         {"title"?,"documentId"?,"components":[{name,kind,...}],
                                         "edges":[{from,to,relation}]}
+  mywb file mermaid <path.mywb> [--syntax flowchart|c4]
+                                        Print the board as Mermaid text (default: flowchart,
+                                        renders natively in GitHub READMEs)
   mywb app docs                         List documents open in the running app (JSON)
   mywb app search [<js>|-]              Run read-only JS in the app's search context
                                         (api.getDocs/getShapes/...); code from arg or stdin
@@ -48,7 +52,8 @@ async function main(): Promise<void> {
 		options: {
 			json: { type: 'boolean', default: false },
 			help: { type: 'boolean', default: false },
-			'server-json': { type: 'string' }
+			'server-json': { type: 'string' },
+			syntax: { type: 'string', default: 'flowchart' }
 		},
 		allowPositionals: true
 	})
@@ -78,6 +83,12 @@ async function main(): Promise<void> {
 		}
 		if (command === 'scaffold' && rest.length === 2) {
 			await runFileScaffold(rest[0], rest[1])
+			return
+		}
+		if (command === 'mermaid' && rest.length === 1) {
+			const syntax = values.syntax as (typeof MERMAID_SYNTAXES)[number]
+			if (!MERMAID_SYNTAXES.includes(syntax)) usageExit(2)
+			await runFileMermaid(rest[0], syntax)
 			return
 		}
 		usageExit(2)

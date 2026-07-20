@@ -121,6 +121,13 @@ Prefer `file scaffold` over hand-building records: write a model JSON
 `from`/`to`/`relation`) and run
 `node <cli.js> file scaffold model.json <board.mywb>`.
 
+**Importing an existing Mermaid diagram** (e.g. from a README): do NOT look
+for a parser — read the mermaid text yourself, translate nodes to
+`components` (pick the closest `kind`) and arrows to `edges` (edge label →
+`relation`), then scaffold as above. The reverse direction is deterministic:
+`node <cli.js> file mermaid <board.mywb>` prints the board back as Mermaid
+for docs.
+
 ## Updating the diagram (optional, when asked to fix)
 
 There is no patch API. To change one prop: take the full `record` from

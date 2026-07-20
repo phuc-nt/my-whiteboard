@@ -33,7 +33,7 @@ export interface ScriptHelpers {
 	layoutTree(rootId: TLShapeId, edges: [TLShapeId, TLShapeId][], options?: TreeLayoutOptions): void
 }
 
-function richTextToPlainText(richText: unknown): string {
+export function richTextToPlainText(richText: unknown): string {
 	// tldraw rich text is a ProseMirror-style doc; walk text nodes.
 	const parts: string[] = []
 	const walk = (node: unknown): void => {

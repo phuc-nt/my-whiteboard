@@ -168,6 +168,53 @@ describe('mywb file scaffold', () => {
 	})
 })
 
+describe('mywb file mermaid', () => {
+	async function scaffoldBoard(): Promise<string> {
+		const dir = await tempDir()
+		const modelPath = join(dir, 'model.json')
+		const board = join(dir, 'board.mywb')
+		await writeFile(
+			modelPath,
+			JSON.stringify({
+				components: [
+					{ name: 'ui', kind: 'web' },
+					{ name: 'store', kind: 'db' }
+				],
+				edges: [{ from: 'ui', to: 'store', relation: 'reads' }]
+			})
+		)
+		await run(process.execPath, [CLI, 'file', 'scaffold', modelPath, board])
+		return board
+	}
+
+	it('prints a flowchart by default with nodes, kinds and relation edges', async () => {
+		const board = await scaffoldBoard()
+		const { stdout } = await run(process.execPath, [CLI, 'file', 'mermaid', board])
+		expect(stdout.startsWith('flowchart LR')).toBe(true)
+		expect(stdout).toContain('["ui"]:::web')
+		expect(stdout).toContain('["store"]:::db')
+		expect(stdout).toContain('-->|"reads"|')
+	})
+
+	it('--syntax c4 prints a C4Context document', async () => {
+		const board = await scaffoldBoard()
+		const { stdout } = await run(process.execPath, [CLI, 'file', 'mermaid', board, '--syntax', 'c4'])
+		expect(stdout.startsWith('C4Context')).toBe(true)
+		expect(stdout).toContain('SystemDb(')
+	})
+
+	it('rejects an unknown syntax with a usage error: exit 2', async () => {
+		const board = await scaffoldBoard()
+		const error = (await run(process.execPath, [CLI, 'file', 'mermaid', board, '--syntax', 'd2']).then(
+			() => {
+				throw new Error('expected usage error')
+			},
+			(e: { code: number }) => e
+		)) as { code: number }
+		expect(error.code).toBe(2)
+	})
+})
+
 describe('mywb vendored dist', () => {
 	// The CI drift-check vendors the built dist/ (cli.js + assets/) into a target
 	// repo with no node_modules. @modelcontextprotocol/sdk is externalized but the

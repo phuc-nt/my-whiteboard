@@ -41,8 +41,9 @@ npm run build:mac  # unsigned universal macOS DMG → apps/desktop/release/
   documents it for an agent. Install the skill for your agents from
   **Help → Install Agent Skills…**.
 - **MCP server** — `mywb mcp` (from `apps/cli`) exposes the running app's canvas
-  as MCP tools (`list_documents`, `read_shapes`, `read_bindings`, `screenshot`,
-  `exec`) so any MCP client connects with one command:
+  as MCP tools (`list_documents`, `read_shapes` — full or summary detail,
+  `read_bindings`, `screenshot`, `exec`, `scaffold_board`) so any MCP client
+  connects with one command:
   `claude mcp add mywb -- node apps/cli/dist/cli.js mcp`.
 - **Custom shapes** — `service-node`, `code-ref`, `mermaid-block` carry
   structured, agent-readable data for architecture and code-reference diagrams.
@@ -50,6 +51,36 @@ npm run build:mac  # unsigned universal macOS DMG → apps/desktop/release/
   sha256-digest consent), enabling durable interactive behavior.
 
 ## Architecture
+
+Rendered straight from this repo's own board — regenerate with
+`node apps/cli/dist/cli.js file mermaid docs/architecture.mywb`:
+
+```mermaid
+flowchart LR
+  n_gshSfADYbwuV43HfoIkE_["@mywb/core"]:::lib
+  n_HYYrEv0N1RyhSEzD2iBc7["@mywb/node-adapter"]:::lib
+  n_K0LvY1S5PAPk8c6cY62wT["@mywb/web-adapter"]:::lib
+  n_CYwKjYp8h_rvK2daos3Qw["desktop app (Electron)"]:::app
+  n_WKtQzRFEPmPgXuLWXEj99["mywb CLI"]:::tool
+  n_lU3_sF9HV5Km1zDA70icx["web app"]:::app
+  n_CFiQJ6xuzDWYjcsSuBR6a["agent-relay"]:::api
+  n_HYYrEv0N1RyhSEzD2iBc7 --> n_gshSfADYbwuV43HfoIkE_
+  n_K0LvY1S5PAPk8c6cY62wT --> n_gshSfADYbwuV43HfoIkE_
+  n_CYwKjYp8h_rvK2daos3Qw --> n_gshSfADYbwuV43HfoIkE_
+  n_CYwKjYp8h_rvK2daos3Qw --> n_HYYrEv0N1RyhSEzD2iBc7
+  n_WKtQzRFEPmPgXuLWXEj99 --> n_gshSfADYbwuV43HfoIkE_
+  n_WKtQzRFEPmPgXuLWXEj99 --> n_HYYrEv0N1RyhSEzD2iBc7
+  n_lU3_sF9HV5Km1zDA70icx --> n_gshSfADYbwuV43HfoIkE_
+  n_lU3_sF9HV5Km1zDA70icx --> n_K0LvY1S5PAPk8c6cY62wT
+  n_lU3_sF9HV5Km1zDA70icx --> n_CFiQJ6xuzDWYjcsSuBR6a
+  n_CFiQJ6xuzDWYjcsSuBR6a --> n_gshSfADYbwuV43HfoIkE_
+  %% code-ref: packages/core/src/shapes/service-node/service-node-shape-util.tsx:8-8
+  %% code-ref: apps/cli/src/cli-main.ts:15-38
+  classDef api fill:#dbeafe,stroke:#1d4ed8
+  classDef lib fill:#e2e8f0,stroke:#334155
+  classDef app fill:#ffedd5,stroke:#c2410c
+  classDef tool fill:#ccfbf1,stroke:#0f766e
+```
 
 See [docs/system-architecture.md](docs/system-architecture.md) and
 [docs/codebase-summary.md](docs/codebase-summary.md). Roadmap (hybrid,

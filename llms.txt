@@ -26,6 +26,10 @@ through the `mywb file` CLI.
   semantics, drift procedure, scaffold/update patterns
 - Runtime: a running app serves `GET /llms.txt` and `GET /readme` on its
   localhost agent API (port and bearer token in `server.json`)
+- Mermaid bridge: `mywb file mermaid <board>` exports a board as Mermaid
+  (flowchart or `--syntax c4`); to import a Mermaid diagram, translate it to
+  a scaffold model JSON yourself and run `mywb file scaffold` — no parser
+  needed
 
 ## Optional
 

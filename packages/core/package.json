@@ -6,6 +6,7 @@
 	"private": true,
 	"exports": {
 		"./format": "./src/format/index.ts",
+		"./mermaid-export": "./src/mermaid-export/index.ts",
 		"./agent-protocol": "./src/agent-protocol/index.ts",
 		"./shapes": "./src/shapes/index.ts",
 		"./sync": "./src/sync/index.ts",
