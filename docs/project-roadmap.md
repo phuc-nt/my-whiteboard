@@ -109,6 +109,18 @@ detail summary|full (pattern BlurryShape, default full giữ nguyên). README
 repo giờ nhúng diagram regen 1 lệnh từ chính board.
 Plan: [plans/260720-1049-interop-v1-mermaid-bridge-mcp-v2/](../plans/260720-1049-interop-v1-mermaid-bridge-mcp-v2/plan.md).
 
+## CI hardening + drift baseline ✅ (done 2026-07-20)
+
+Repo public nhưng 0 CI — mọi claim "gates xanh" chỉ tồn tại trên máy local.
+`.github/workflows/ci.yml` hai tầng: job `fast` (typecheck + unit 6 suite,
+mọi push/PR) và job `e2e` (Electron dưới xvfb, web + relay, VS Code
+extension) chạy sau. Kèm `diagram-drift-check.yml` cho chính repo: export
+diagram luôn chạy, agent step **skip** (không đỏ) khi thiếu
+`ANTHROPIC_API_KEY` hoặc PR từ fork. Verify bằng run thật trên GitHub, không
+phải "cú pháp đúng". Script `test` của apps/vscode đổi thành
+`test:integration` để `npm test` ở root không tải VS Code.
+Plan: [plans/260720-1503-ci-hardening-tiered-drift-baseline/](../plans/260720-1503-ci-hardening-tiered-drift-baseline/plan.md).
+
 ## VS Code Extension MVP — edit + save `.mywb` in-editor ✅ (done 2026-07-20)
 
 Quyết định 2026-07-20 (brainstorm ràng buộc "không phụ thuộc nợ manual"; user
