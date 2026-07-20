@@ -1,24 +1,24 @@
-# Diagram drift check — sample workflow.
-# Copy into .github/workflows/ of a repo that keeps a .mywb architecture
-# diagram and adjust BOARD_PATH. Recommended: add a paths filter (see below)
-# so the agent only runs when it matters.
+# This repo eating its own dog food: docs/architecture.mywb describes this
+# codebase, so every PR that touches the code re-checks the diagram against it.
 #
-# Roles: the agent only WRITES findings.json (contract in SKILL.md); this
-# workflow validates it, renders the PR comment from it, and uploads it as an
-# artifact — so the comment always matches the measurable record. Drift does
-# NOT fail the build (comment-only); only a malformed findings.json does,
-# because that is an infrastructure error, not drift.
+# The export step always runs — it proves the board and the CLI are healthy
+# even with no API key configured. The agent steps skip (not fail) when
+# ANTHROPIC_API_KEY is absent or the PR comes from a fork, so contributors
+# never see a red check they cannot fix. Add the secret to turn the analysis on.
 #
-# Requires Node >= 22.5 (node:sqlite) and the ANTHROPIC_API_KEY repo secret.
-# In the my-whiteboard monorepo the CLI builds from source; in your own repo,
-# vendor the built dist instead (see README) and use tools/mywb/dist/cli.js.
+# Template + agent instructions: examples/ci-drift-check/
 
 name: diagram-drift-check
+
 on:
   pull_request:
-    # Recommended paths filter — adapt to your repo, e.g.:
-    #   paths: ['src/**', 'docs/architecture.mywb', 'tools/mywb/**',
-    #           '.github/workflows/diagram-drift-check.yml']
+    paths:
+      - 'packages/**'
+      - 'apps/**'
+      - 'services/**'
+      - 'docs/architecture.mywb'
+      - '.github/workflows/diagram-drift-check.yml'
+  workflow_dispatch:
 
 env:
   BOARD_PATH: docs/architecture.mywb
@@ -38,17 +38,14 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
 
-      # Monorepo variant — replace with the vendored CLI in your repo.
       - run: npm ci
       - run: npm run build -w apps/cli
 
       - name: Export diagram as JSON
         run: node apps/cli/dist/cli.js file read "$BOARD_PATH" --json > diagram.json
 
-      # Fork PRs never receive secrets, so the agent steps below would fail on
-      # them through no fault of the diagram. Skip instead: the export above
-      # still proves the board and the CLI are healthy.
       - name: Decide whether the agent can run
         id: agent
         env:

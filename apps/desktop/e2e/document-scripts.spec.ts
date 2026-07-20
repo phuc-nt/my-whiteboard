@@ -19,7 +19,16 @@ test.afterAll(async () => {
 	await shutdownApp(app)
 })
 
-async function waitForState(docId: string, expected: string, timeoutMs = 8000): Promise<string> {
+// The watcher → consent → run chain is fast locally but comfortably slower on
+// a shared CI runner; give it more room there rather than making every local
+// run wait out a padded timeout.
+const STATE_TIMEOUT_MS = process.env.CI ? 40_000 : 8_000
+
+async function waitForState(
+	docId: string,
+	expected: string,
+	timeoutMs = STATE_TIMEOUT_MS
+): Promise<string> {
 	const deadline = Date.now() + timeoutMs
 	let last = 'none'
 	while (Date.now() < deadline) {
