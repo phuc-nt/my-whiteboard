@@ -1,0 +1,61 @@
+{
+	"name": "my-whiteboard-vscode",
+	"displayName": "My Whiteboard",
+	"description": "Open and edit .mywb whiteboard files on a tldraw canvas inside VS Code",
+	"version": "0.1.0",
+	"publisher": "phuc-nt",
+	"private": true,
+	"license": "MIT",
+	"engines": {
+		"vscode": "^1.90.0"
+	},
+	"categories": [
+		"Visualization"
+	],
+	"main": "./dist/extension.js",
+	"activationEvents": [],
+	"contributes": {
+		"customEditors": [
+			{
+				"viewType": "mywb.board",
+				"displayName": "My Whiteboard Board",
+				"selector": [
+					{
+						"filenamePattern": "*.mywb"
+					}
+				],
+				"priority": "default"
+			}
+		]
+	},
+	"scripts": {
+		"build": "npm run build:webview && npm run build:ext",
+		"build:webview": "vite build",
+		"build:ext": "tsc -p tsconfig.ext.json",
+		"typecheck": "tsc --noEmit -p tsconfig.ext.json && tsc --noEmit -p webview/tsconfig.json",
+		"test": "npm run build && node ./dist/test/run-tests.js",
+		"package:vsix": "vsce package --no-dependencies -o my-whiteboard.vsix"
+	},
+	"dependencies": {
+		"@mywb/core": "*",
+		"@mywb/web-adapter": "*",
+		"@tldraw/assets": "^5.2.5",
+		"react": "^19.2.7",
+		"react-dom": "^19.2.7",
+		"tldraw": "5.2.5"
+	},
+	"devDependencies": {
+		"@types/mocha": "^10.0.10",
+		"@types/node": "^25.0.0",
+		"@types/react": "^19.0.0",
+		"@types/react-dom": "^19.0.0",
+		"@types/vscode": "^1.90.0",
+		"@vitejs/plugin-react": "^5.0.0",
+		"@vscode/test-electron": "^2.4.1",
+		"mocha": "^11.0.0",
+		"typescript": "^5.9.0",
+		"vite": "^7.0.0",
+		"glob": "^11.0.0",
+		"@vscode/vsce": "^3.0.0"
+	}
+}

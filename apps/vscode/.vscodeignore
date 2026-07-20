@@ -1,0 +1,8 @@
+src/**
+webview/**
+node_modules/**
+.vscode-test/**
+tsconfig*.json
+vite.config.ts
+*.vsix
+dist/test/**

@@ -31,3 +31,8 @@ playwright-report/
 
 # Packaging output
 release/
+
+# vscode extension build artifacts
+apps/vscode/media/
+apps/vscode/.vscode-test/
+*.vsix
