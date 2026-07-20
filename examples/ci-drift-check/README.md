@@ -1,9 +1,17 @@
 # CI drift-check example
 
 Keeps a `.mywb` architecture diagram honest: on each PR, an agent reads the
-diagram as structured data and compares it with the code, commenting when they
-disagree. The intelligence lives in [SKILL.md](SKILL.md); this repo only
-provides data access (`mywb file read/apply`).
+diagram as structured data, evaluates only the claims the PR's diff touches,
+and writes a machine-readable `findings.json` (contract in
+[SKILL.md](SKILL.md)). The workflow renders the PR comment from that file and
+uploads it as the `drift-findings` artifact — every run is measurable (drift
+caught, false positives, coverage) without reading comments by hand. Drift is
+comment-only; only a malformed findings.json fails the build. The
+intelligence lives in SKILL.md; this repo only provides data access
+(`mywb file read/apply/scaffold`).
+
+The same procedure runs locally before a push — no CI or API key needed; see
+"Local pre-push" in SKILL.md.
 
 ## Files
 

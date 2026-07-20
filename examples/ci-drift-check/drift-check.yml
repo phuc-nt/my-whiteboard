@@ -1,12 +1,24 @@
 # Diagram drift check — sample workflow.
 # Copy into .github/workflows/ of a repo that keeps a .mywb architecture
-# diagram, adjust BOARD_PATH and the agent step, done.
+# diagram and adjust BOARD_PATH. Recommended: add a paths filter (see below)
+# so the agent only runs when it matters.
 #
-# Requires Node >= 22.5 (node:sqlite). The CLI is record-level and does no file
-# locking — CI only ever reads a committed file, so that is fine here.
+# Roles: the agent only WRITES findings.json (contract in SKILL.md); this
+# workflow validates it, renders the PR comment from it, and uploads it as an
+# artifact — so the comment always matches the measurable record. Drift does
+# NOT fail the build (comment-only); only a malformed findings.json does,
+# because that is an infrastructure error, not drift.
+#
+# Requires Node >= 22.5 (node:sqlite) and the ANTHROPIC_API_KEY repo secret.
+# In the my-whiteboard monorepo the CLI builds from source; in your own repo,
+# vendor the built dist instead (see README) and use tools/mywb/dist/cli.js.
 
 name: diagram-drift-check
-on: pull_request
+on:
+  pull_request:
+    # Recommended paths filter — adapt to your repo, e.g.:
+    #   paths: ['src/**', 'docs/architecture.mywb', 'tools/mywb/**',
+    #           '.github/workflows/diagram-drift-check.yml']
 
 env:
   BOARD_PATH: docs/architecture.mywb
@@ -14,33 +26,85 @@ env:
 jobs:
   drift:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
+      # Full history so the agent's scoping step can diff against the base.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      # In the my-whiteboard monorepo the CLI builds from source. In your own
-      # repo, install/vendor the built dist instead.
+      # Monorepo variant — replace with the vendored CLI in your repo.
       - run: npm ci
       - run: npm run build -w apps/cli
 
       - name: Export diagram as JSON
         run: node apps/cli/dist/cli.js file read "$BOARD_PATH" --json > diagram.json
 
-      # Agent step — any coding agent works; the intelligence lives in
-      # SKILL.md, not in this workflow. Example with Claude Code:
-      #
-      # - name: Drift check
-      #   env:
-      #     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      #   run: |
-      #     claude -p "Follow examples/ci-drift-check/SKILL.md. Compare \
-      #       diagram.json against this repository's source tree and post a \
-      #       drift report as a PR comment (gh pr comment)." \
-      #       --allowedTools "Bash,Read,Grep,Glob"
-      - name: Drift check (wire your agent here)
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Drift check (agent writes findings.json)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
-          echo "diagram.json is ready for your agent — see examples/ci-drift-check/README.md"
-          head -c 400 diagram.json
+          claude -p "Follow examples/ci-drift-check/SKILL.md. diagram.json in \
+            the repo root is the exported architecture board. BASE_REF is set \
+            in the environment — apply the scoping step, evaluate the in-scope \
+            claims against this repository, and write findings.json exactly \
+            per the output contract. Do not post comments." \
+            --allowedTools "Bash,Read,Grep,Glob,Write"
+
+      - name: Validate findings.json
+        run: |
+          jq -e '
+            .version == 1
+            and (.claims | type == "array")
+            and ([.claims[].status] - ["ok","drifted","unverifiable","skipped-out-of-scope"] == [])
+            and (.summary.ok == ([.claims[] | select(.status == "ok")] | length))
+            and (.summary.drifted == ([.claims[] | select(.status == "drifted")] | length))
+            and (.summary.unverifiable == ([.claims[] | select(.status == "unverifiable")] | length))
+            and (.summary.skipped == ([.claims[] | select(.status == "skipped-out-of-scope")] | length))
+          ' findings.json
+
+      - name: Comment on the PR (rendered from findings)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          DRIFTED=$(jq '.summary.drifted' findings.json)
+          UNVERIFIABLE=$(jq '.summary.unverifiable' findings.json)
+          if [ "$DRIFTED" -gt 0 ] || [ "$UNVERIFIABLE" -gt 0 ]; then
+            {
+              echo "## Diagram drift check"
+              echo ""
+              echo "| status | type | claim | evidence | note |"
+              echo "|---|---|---|---|---|"
+              jq -r '.claims[]
+                | select(.status == "drifted" or .status == "unverifiable")
+                | [.status, .type, .claim, (.evidence // [] | join("<br>")), (.note // "")]
+                | map(tostring | gsub("\\|"; "\\|") | gsub("\n"; " "))
+                | "| " + join(" | ") + " |"' \
+                findings.json
+            } > comment.md
+          else
+            TOTAL=$(jq '.claims | length' findings.json)
+            SKIPPED=$(jq '.summary.skipped' findings.json)
+            SCOPE=$(jq -r '.run.scope' findings.json)
+            echo "Diagram drift check: in sync ($((TOTAL - SKIPPED))/$TOTAL claims evaluated, scope=$SCOPE)." > comment.md
+          fi
+          gh pr comment "$PR_NUMBER" --body-file comment.md
+
+      - name: Upload findings artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-findings
+          path: findings.json
+          if-no-files-found: ignore
