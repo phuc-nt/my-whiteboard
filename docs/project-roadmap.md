@@ -12,7 +12,11 @@ restore, Agent API localhost (search/exec/screenshot), skill installer + CLI
 Plan: [plans/260719-0904-my-whiteboard-mvp-local-first/](../plans/260719-0904-my-whiteboard-mvp-local-first/plan.md).
 
 Còn nợ trong stage này (không chặn): manual GUI pass (save dialog / recovery /
-consent-reopen), xác nhận license tldraw, signing/notarization.
+consent-reopen), signing/notarization. Nợ license tldraw đã đóng 2026-07-20
+bằng quyết định định vị phân phối OSS/self-install — xem
+[product-positioning-abstract.md](product-positioning-abstract.md) mục "Định
+vị phân phối & license tldraw": OSS creator không cần mua license, localhost
+= dev không cần key, downstream tự xin (Hobby/commercial), ship không kèm key.
 
 ## Stage 1 — Tách core ✅ (done 2026-07-19)
 

@@ -50,9 +50,35 @@ Sản phẩm KHÔNG chọn dứt khoát desktop-only hay web-only. Đích là **
 
 **Nguyên tắc bảo toàn tùy chọn:** mọi thay đổi từ đây giữ ranh giới renderer↔main sạch, để khi cần web chỉ viết adapter chứ không viết lại core. Web là **đích của giai đoạn team/collab**, không thay thế desktop.
 
+## Định vị phân phối & license tldraw (chốt 2026-07-20)
+
+Sản phẩm là **dự án open source, chạy local**: engineer tự cài, tự chạy trên
+máy mình (localhost). Với định vị này, scheme license của tldraw SDK áp như sau:
+
+- **Người tạo dự án open source KHÔNG cần mua license.** tldraw cho phép nhúng
+  SDK vào dự án mã nguồn mở; bản thân SDK giữ nguyên license gốc của tldraw —
+  phần tldraw trong repo không "open source" theo nghĩa đầy đủ. Nghĩa vụ
+  license thuộc về **downstream** (người chạy production), không phải ta.
+- **SDK phân biệt dev/production theo domain**: chạy trên localhost (HTTP) →
+  tính là dev, không cần key. Engineer chỉ chạy trên máy mình
+  (localhost/docker local) → không cần license. Deploy lên server riêng có
+  domain/HTTPS (kể cả nội bộ) → cần license, và **mỗi người/tổ chức tự xin**.
+- **Loại license downstream tự xin**: cá nhân/phi thương mại → Hobby license
+  (miễn phí, nộp đơn, tldraw duyệt từng case, có watermark). Dùng trong công
+  việc tại công ty (kể cả tool nội bộ) → commercial use → công ty đó mua
+  commercial license (~$6,000/năm/team).
+- **Cách ship (theo mẫu cộng đồng, vd tldraw-selfhosted)**: repo KHÔNG kèm
+  license key; chừa biến cấu hình `LICENSE_KEY` trống — người dùng tự điền
+  key của họ khi build/deploy. Trách nhiệm license chuyển hoàn toàn sang
+  người tự cài; ta không gánh nghĩa vụ pháp lý.
+
+Hệ quả cho roadmap: nợ "xác nhận license" của Stage 0 đóng bằng quyết định
+định vị này — không cần mua license để phát triển và phát hành OSS. Re-verify
+với terms chính thức của tldraw khi (a) nâng major version SDK, hoặc (b) có
+kênh phân phối ngoài mô hình self-install (vd hosted web app).
+
 ## Ràng buộc
 
-- tldraw SDK cần license thương mại để bỏ watermark — chi phí phải xác nhận với tldraw trước khi ship rộng.
 - `/exec` là code execution có chủ đích — chỉ bind 127.0.0.1, token per-launch, consent cho script trong file lạ.
 
 ## Tham chiếu
