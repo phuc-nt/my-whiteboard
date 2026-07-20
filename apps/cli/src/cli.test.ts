@@ -1,8 +1,8 @@
 import { buildMywbFixture, readMywbDocument } from '@mywb/node-adapter/headless-document'
 import { execFile } from 'node:child_process'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { promisify } from 'node:util'
 import { afterEach, describe, expect, it } from 'vitest'
 
@@ -101,6 +101,21 @@ describe('mywb file apply', () => {
 
 		const after = await readMywbDocument(file)
 		expect(after.records).toEqual(before.records)
+	})
+})
+
+describe('mywb vendored dist', () => {
+	// The CI drift-check vendors the built dist/ (cli.js + assets/) into a target
+	// repo with no node_modules. @modelcontextprotocol/sdk is externalized but the
+	// mcp import is lazy, so `file read` must not pull it in. Proven by copying
+	// dist/ into a bare dir and running it from there.
+	it('file read runs from a vendored dist copy with no node_modules on disk', async () => {
+		const file = await makeFixture()
+		const bare = await tempDir()
+		await cp(dirname(CLI), join(bare, 'dist'), { recursive: true })
+
+		const { stdout } = await run(process.execPath, [join(bare, 'dist', 'cli.js'), 'file', 'read', file, '--json'])
+		expect(JSON.parse(stdout).metadata.documentId).toBe('cli-test-doc')
 	})
 })
 

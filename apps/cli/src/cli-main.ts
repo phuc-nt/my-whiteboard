@@ -5,7 +5,6 @@ import { parseArgs } from 'node:util'
 import { runAppDocs, runAppExec, runAppSearch } from './app-commands'
 import { runFileApply } from './file-apply-command'
 import { runFileRead } from './file-read-command'
-import { startMcpServer } from './mcp/mcp-server'
 
 // Companion CLI to the desktop app. `file` works on .mywb files headlessly;
 // `app` talks to the RUNNING desktop app over its localhost agent API.
@@ -54,8 +53,11 @@ async function main(): Promise<void> {
 	const [ns, command, ...rest] = positionals
 
 	if (ns === 'mcp') {
-		// Long-lived stdio MCP server — blocks here until the client disconnects,
-		// then falls through to the normal process.exit(0).
+		// Import lazily so `file`/`app` commands run from a vendored dist/cli.js
+		// without the externalized @modelcontextprotocol/sdk on disk — only the
+		// mcp subcommand needs it. Long-lived stdio server: blocks here until the
+		// client disconnects, then falls through to the normal process.exit(0).
+		const { startMcpServer } = await import('./mcp/mcp-server')
 		await startMcpServer()
 		return
 	}

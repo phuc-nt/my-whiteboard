@@ -7,7 +7,10 @@ screenshots.
 ## Getting the data
 
 ```bash
+# In the my-whiteboard monorepo:
 node apps/cli/dist/cli.js file read <board.mywb> --json > diagram.json
+# In a target repo that vendors the built dist (see README):
+node tools/mywb/dist/cli.js file read <board.mywb> --json > diagram.json
 ```
 
 Output shape: `{ metadata, schemaJson, records: [{ id, typeName, record }] }`.
@@ -18,7 +21,7 @@ which kind.
 
 - **`service-node`** — one service/system. `record.props`:
   - `name` — service name as the diagram claims it
-  - `kind` — one of `api | db | queue | cron | web`
+  - `kind` — one of `api | db | queue | cron | web | lib | app | tool`
   - `repoUrl` — repository or module the service is supposed to live in ('' if unset)
   - `ownerTeam` — owning team ('' if unset)
 - **`code-ref`** — a pointer into code. `record.props`: `repo`, `path`,
@@ -49,7 +52,8 @@ There is no patch API. To change one prop: take the full `record` from
 `file read --json`, merge your change into it, then:
 
 ```bash
-node apps/cli/dist/cli.js file apply <board.mywb> changes.json
+# monorepo: node apps/cli/dist/cli.js  ·  vendored: node tools/mywb/dist/cli.js
+node <cli.js> file apply <board.mywb> changes.json
 # changes.json: { "put": [<full merged record>], "removed": [] }
 ```
 
