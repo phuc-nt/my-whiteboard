@@ -1,5 +1,5 @@
 import type { BrowserWindow } from 'electron'
-import { watch, type FSWatcher } from 'fs'
+import { watch, watchFile, unwatchFile, type FSWatcher } from 'fs'
 import { join } from 'path'
 import { ARCHIVE_SCRIPT_DIR } from '@mywb/core/format'
 import { scriptUrl } from '../app-protocols'
@@ -13,6 +13,8 @@ import { computeScriptDigest, isDigestTrusted, trustDigest } from './script-trus
 
 export type ScriptState = 'none' | 'pending' | 'applied' | 'error'
 
+const SCRIPT_MAIN_FILE = 'main.js'
+
 export interface ScriptStatus {
 	state: ScriptState
 	digest: string | null
@@ -24,6 +26,8 @@ interface Coordinator {
 	window: BrowserWindow
 	workingCopyDir: string
 	watcher: FSWatcher | null
+	/** main.js path handed to watchFile, so detach can unwatch it. */
+	polledPath: string | null
 	debounce: ReturnType<typeof setTimeout> | null
 	digest: string | null
 	appliedDigest: string | null
@@ -44,6 +48,7 @@ export function attachDocumentScripts(
 		window,
 		workingCopyDir,
 		watcher: null,
+		polledPath: null,
 		debounce: null,
 		digest: null,
 		appliedDigest: null,
@@ -52,14 +57,7 @@ export function attachDocumentScripts(
 	}
 	coordinators.set(documentId, coordinator)
 
-	const scriptDir = join(workingCopyDir, ARCHIVE_SCRIPT_DIR)
-	try {
-		coordinator.watcher = watch(scriptDir, { recursive: true }, () => scheduleReconcile(documentId))
-	} catch {
-		// script/ may not exist yet; created lazily by openScriptWorkspace,
-		// after which the first reconcile (triggered by the workspace call)
-		// starts the watcher.
-	}
+	startWatching(coordinator, documentId)
 	void reconcile(documentId, { localEdit: false })
 }
 
@@ -67,6 +65,7 @@ export function detachDocumentScripts(documentId: string): void {
 	const coordinator = coordinators.get(documentId)
 	if (!coordinator) return
 	coordinator.watcher?.close()
+	if (coordinator.polledPath) unwatchFile(coordinator.polledPath)
 	if (coordinator.debounce) clearTimeout(coordinator.debounce)
 	coordinators.delete(documentId)
 }
@@ -80,13 +79,30 @@ export function detachAllDocumentScripts(): void {
 export function ensureWatching(documentId: string): void {
 	const coordinator = coordinators.get(documentId)
 	if (!coordinator || coordinator.watcher) return
+	startWatching(coordinator, documentId)
+	void reconcile(documentId, { localEdit: true })
+}
+
+/**
+ * Watch script/ for edits.
+ *
+ * `recursive: true` is only implemented on macOS and Windows — on Linux the
+ * watcher is created but never emits, which silently disabled document
+ * scripts there. Watch the directory non-recursively (portable) and poll
+ * main.js as a backstop for the editors and filesystems that inotify misses.
+ */
+function startWatching(coordinator: Coordinator, documentId: string): void {
 	const scriptDir = join(coordinator.workingCopyDir, ARCHIVE_SCRIPT_DIR)
 	try {
-		coordinator.watcher = watch(scriptDir, { recursive: true }, () => scheduleReconcile(documentId))
+		coordinator.watcher = watch(scriptDir, () => scheduleReconcile(documentId))
 	} catch {
-		// still absent — no-op
+		// script/ may not exist yet; created lazily by openScriptWorkspace,
+		// after which ensureWatching starts the watcher.
+		return
 	}
-	void reconcile(documentId, { localEdit: true })
+	const mainPath = join(scriptDir, SCRIPT_MAIN_FILE)
+	coordinator.polledPath = mainPath
+	watchFile(mainPath, { interval: 500 }, () => scheduleReconcile(documentId))
 }
 
 function scheduleReconcile(documentId: string): void {

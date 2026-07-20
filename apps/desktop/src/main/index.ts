@@ -374,6 +374,16 @@ app.on('open-file', (event, filePath) => {
 	else pendingOpenFiles.push(filePath)
 })
 
+// `open-file` is macOS-only. Everywhere else a file opened from a file
+// manager or the shell arrives in argv of this very launch, so queue it the
+// same way — without this, `mywb board.mywb` opened an empty window on
+// Linux and Windows.
+if (process.platform !== 'darwin') {
+	for (const arg of process.argv.slice(1)) {
+		if (arg.endsWith('.mywb')) pendingOpenFiles.push(arg)
+	}
+}
+
 let quitting = false
 let sessionWindowsAtQuit: ReturnType<typeof snapshotSessionWindows> | null = null
 let cleanExitPersisted = false

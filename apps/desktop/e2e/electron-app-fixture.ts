@@ -24,12 +24,16 @@ export interface AgentApi {
 /** No-op kept for spec readability — each launch already gets a fresh dir. */
 export async function resetUserData(): Promise<void> {}
 
-export async function launchApp(env: Record<string, string> = {}): Promise<ElectronApplication> {
+export async function launchApp(
+	env: Record<string, string> = {},
+	/** Extra argv for the app, e.g. a .mywb path the way a shell would pass it. */
+	extraArgs: string[] = []
+): Promise<ElectronApplication> {
 	userDataDir = await mkdtemp(join(tmpdir(), 'mywb-e2e-'))
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	const { ELECTRON_RUN_AS_NODE, ...cleanEnv } = process.env as Record<string, string>
 	return electron.launch({
-		args: [join(here, '..', 'out', 'main', 'index.js')],
+		args: [join(here, '..', 'out', 'main', 'index.js'), ...extraArgs],
 		env: { ...cleanEnv, ...env, MYWB_TEST_USER_DATA: userDataDir }
 	})
 }

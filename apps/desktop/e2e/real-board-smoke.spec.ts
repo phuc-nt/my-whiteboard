@@ -50,13 +50,16 @@ test.beforeAll(async () => {
 		.sort()
 
 	await resetUserData()
-	app = await launchApp()
+	// Production open-from-outside paths differ by platform: macOS delivers an
+	// `open-file` event, everywhere else the path arrives in argv. Exercise the
+	// one this OS actually uses.
+	app = await launchApp({}, process.platform === 'darwin' ? [] : [boardCopy])
 	api = await connectAgentApi()
-	// The same event macOS Finder dispatches; before startup completes the app
-	// queues it, after that it opens immediately — both are production paths.
-	await app.evaluate(({ app: electronApp }, filePath) => {
-		electronApp.emit('open-file', { preventDefault() {} }, filePath)
-	}, boardCopy)
+	if (process.platform === 'darwin') {
+		await app.evaluate(({ app: electronApp }, filePath) => {
+			electronApp.emit('open-file', { preventDefault() {} }, filePath)
+		}, boardCopy)
+	}
 })
 
 test.afterAll(async () => {
