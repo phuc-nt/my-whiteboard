@@ -19,6 +19,7 @@
 		"e2e:web": "npm run e2e -w apps/web",
 		"e2e:relay": "npm run e2e:relay -w apps/web",
 		"build:mac": "npm run build:mac -w apps/desktop",
-		"e2e:vscode": "npm run test:integration -w apps/vscode"
+		"e2e:vscode": "npm run test:integration -w apps/vscode",
+		"build:linux": "npm run build:linux -w apps/desktop"
 	}
 }

@@ -24,6 +24,30 @@ jobs:
       - run: npm run typecheck
       - run: npm test
 
+  # Packages the desktop app for Linux (AppImage + deb). Runs alongside e2e,
+  # not after it — a build failure and a test failure are independent signals.
+  linux-build:
+    needs: [fast]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Build Linux packages
+        run: npm run build:linux -w apps/desktop
+      - name: Upload Linux packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-desktop
+          path: |
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/*.deb
+          if-no-files-found: error
+          retention-days: 14
+
   e2e:
     needs: [fast]
     runs-on: ubuntu-latest

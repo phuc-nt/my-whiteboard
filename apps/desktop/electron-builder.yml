@@ -23,3 +23,10 @@ mac:
   identity: null
 dmg:
   title: My Whiteboard
+linux:
+  # AppImage runs on any distro; deb for Debian/Ubuntu. Both unsigned —
+  # Linux has no notarization step, so this needs no account or certificate.
+  target:
+    - AppImage
+    - deb
+  category: Development
