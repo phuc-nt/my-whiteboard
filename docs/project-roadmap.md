@@ -109,6 +109,15 @@ detail summary|full (pattern BlurryShape, default full giữ nguyên). README
 repo giờ nhúng diagram regen 1 lệnh từ chính board.
 Plan: [plans/260720-1049-interop-v1-mermaid-bridge-mcp-v2/](../plans/260720-1049-interop-v1-mermaid-bridge-mcp-v2/plan.md).
 
+## Linux build + frame-drift claim ✅ (done 2026-07-21)
+
+CI 2 ngày trước đã chứng minh app chạy trên Linux (24/24 e2e, 2 bug Linux
+đã sửa) → thu hoạch: electron-builder linux target (AppImage + deb, unsigned,
+không cần account) + CI job `linux-build` upload artifact (299MB, verified).
+Kênh distribution thứ 2. Kèm: drift-check SKILL thêm claim type `frame`
+(subsystem membership ↔ directory root) sau khi SDK v1 cho boards có frames.
+Plan: [plans/260721-1201-linux-build-frame-drift-claim/](../plans/260721-1201-linux-build-frame-drift-claim/plan.md).
+
 ## CI hardening + drift baseline ✅ (done 2026-07-20)
 
 Repo public nhưng 0 CI — mọi claim "gates xanh" chỉ tồn tại trên máy local.
