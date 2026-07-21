@@ -16,6 +16,7 @@ interface ParsedShape {
 	id: string
 	type: string
 	index: string
+	parentId: string
 	props: Record<string, unknown>
 	meta: Record<string, unknown>
 }
@@ -48,6 +49,7 @@ function parseShapes(records: SerializedRecord[]): ParsedShape[] {
 				id: string
 				type: string
 				index?: string
+				parentId?: string
 				props?: Record<string, unknown>
 				meta?: Record<string, unknown>
 			}
@@ -55,6 +57,7 @@ function parseShapes(records: SerializedRecord[]): ParsedShape[] {
 				id: record.id,
 				type: record.type,
 				index: record.index ?? '',
+				parentId: record.parentId ?? '',
 				props: record.props ?? {},
 				meta: record.meta ?? {}
 			}
@@ -115,12 +118,28 @@ export function exportBoardToMermaid(
 	const declared = new Set(nodes.map((n) => nodeId(n.id)))
 	const edges = collectEdges(records).filter((e) => declared.has(e.from) && declared.has(e.to))
 
+	// Group nodes by the frame they live in (parentId), so a subsystem frame
+	// becomes a mermaid subgraph. Nodes whose parent is not a frame render flat.
+	const frames = shapes.filter((s) => s.type === 'frame')
+	const frameIds = new Set(frames.map((f) => f.id))
+	const declareNode = (node: ParsedShape): string => {
+		const kind = String(node.props.kind ?? 'lib')
+		return `${nodeId(node.id)}["${escapeLabel(String(node.props.name ?? ''))}"]:::${kind}`
+	}
+
 	const lines: string[] = []
 	if (syntax === 'flowchart') {
 		lines.push('flowchart LR')
+		for (const frame of frames) {
+			const members = nodes.filter((n) => n.parentId === frame.id)
+			if (members.length === 0) continue
+			lines.push(`  subgraph ${nodeId(frame.id)}["${escapeLabel(String(frame.props.name ?? ''))}"]`)
+			for (const node of members) lines.push(`    ${declareNode(node)}`)
+			lines.push('  end')
+		}
 		for (const node of nodes) {
-			const kind = String(node.props.kind ?? 'lib')
-			lines.push(`  ${nodeId(node.id)}["${escapeLabel(String(node.props.name ?? ''))}"]:::${kind}`)
+			if (frameIds.has(node.parentId)) continue // already declared in a subgraph
+			lines.push(`  ${declareNode(node)}`)
 		}
 		for (const edge of edges) {
 			// Quoted edge label: keeps agent-supplied relation text (pipes,

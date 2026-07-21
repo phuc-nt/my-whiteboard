@@ -30,11 +30,14 @@ node apps/cli/dist/cli.js file scaffold model.json docs/architecture.mywb
 # model.json:
 # { "title": "my-app — architecture", "documentId": "my-app-architecture",
 #   "components": [{ "name": "web ui", "kind": "web", "repoUrl": "src/app" }, ...],
-#   "edges": [{ "from": "web ui", "to": "api", "relation": "calls" }, ...] }
+#   "edges": [{ "from": "web ui", "to": "api", "relation": "calls" }, ...],
+#   "groups": [{ "name": "backend", "members": ["api", "db"] }, ...] }
 ```
 
 Nodes are laid out by kind (entry surfaces → api → libs → storage); arrows are
-bound to both endpoints and carry `meta.relation`. Open the result in the app
+bound to both endpoints and carry `meta.relation`. Optional `groups` wrap their
+members in a named subsystem frame (each component in at most one group) — the
+Mermaid export turns each frame into a `subgraph`. Open the result in the app
 to fine-tune, then commit.
 
 ## Try it locally

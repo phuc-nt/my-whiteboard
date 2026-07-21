@@ -3,6 +3,7 @@ import { richTextToPlainText } from '@mywb/core/exec'
 import type { BoardModel } from '@mywb/node-adapter/headless-document'
 import { buildBoardFromModel } from '@mywb/node-adapter/headless-document'
 import { z } from 'zod'
+import { focusExec, SVG_EXEC } from '../app-commands'
 import {
 	AppNotRunningError,
 	loadServerInfo,
@@ -160,6 +161,42 @@ export function registerMywbTools(server: McpServer): void {
 	)
 
 	server.registerTool(
+		'export_svg',
+		{
+			description:
+				'Export an open document as an SVG string (vector, layout-faithful, diffable) — the pixel-true counterpart to screenshot.',
+			inputSchema: z.object({ documentId: z.string() })
+		},
+		async ({ documentId }) => {
+			try {
+				return jsonResult(
+					unwrap(await withApp(serverJson, (info) => runExec(info, documentId, SVG_EXEC)))
+				)
+			} catch (error) {
+				return errorResult(error)
+			}
+		}
+	)
+
+	server.registerTool(
+		'focus_shape',
+		{
+			description:
+				'Pan and zoom the open document canvas to a shape and select it, so a human watching the app sees exactly what you mean (e.g. the shape a drift finding refers to). Changes the current selection.',
+			inputSchema: z.object({ documentId: z.string(), shapeId: z.string() })
+		},
+		async ({ documentId, shapeId }) => {
+			try {
+				return jsonResult(
+					unwrap(await withApp(serverJson, (info) => runExec(info, documentId, focusExec(shapeId))))
+				)
+			} catch (error) {
+				return errorResult(error)
+			}
+		}
+	)
+
+	server.registerTool(
 		'scaffold_board',
 		{
 			description:
@@ -178,7 +215,10 @@ export function registerMywbTools(server: McpServer): void {
 					),
 					edges: z.array(
 						z.object({ from: z.string(), to: z.string(), relation: z.string() })
-					)
+					),
+					groups: z
+						.array(z.object({ name: z.string(), members: z.array(z.string()) }))
+						.optional()
 				}),
 				targetPath: z.string()
 			})

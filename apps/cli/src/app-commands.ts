@@ -42,3 +42,48 @@ export async function runAppExec(
 	const reply = await runExec(info, documentId, await resolveCode(codeArg))
 	await writeStdout(JSON.stringify(reply, null, 2) + '\n')
 }
+
+/** SVG string that captures the current page as vector art. Shared verbatim
+ * by the CLI and the MCP export_svg tool so both stay in sync. */
+export const SVG_EXEC = `const ids = [...editor.getCurrentPageShapeIds()]
+if (ids.length === 0) throw new Error('document has no shapes to export')
+const out = await editor.getSvgString(ids, { background: true })
+if (!out?.svg) throw new Error('getSvgString returned no svg')
+return out.svg`
+
+export async function runAppSvg(documentId: string, serverJsonFlag?: string): Promise<void> {
+	const info = await loadServerInfo(resolveServerJsonPath(serverJsonFlag))
+	const reply = (await runExec(info, documentId, SVG_EXEC)) as {
+		success: boolean
+		result?: string
+		error?: string
+	}
+	if (!reply.success) throw new Error(reply.error ?? 'svg export failed')
+	await writeStdout(reply.result ?? '')
+}
+
+/** Move the app's camera to a shape and select it. Selection = highlight. */
+export function focusExec(shapeId: string): string {
+	return `const s = editor.getShape(${JSON.stringify(shapeId)})
+if (!s) throw new Error('no shape ' + ${JSON.stringify(shapeId)})
+editor.select(${JSON.stringify(shapeId)})
+editor.zoomToSelection({ animation: { duration: 400 } })
+return { focused: ${JSON.stringify(shapeId)} }`
+}
+
+export async function runAppFocus(
+	documentId: string,
+	shapeId: string,
+	serverJsonFlag?: string
+): Promise<void> {
+	const info = await loadServerInfo(resolveServerJsonPath(serverJsonFlag))
+	const reply = (await runExec(info, documentId, focusExec(shapeId))) as {
+		success: boolean
+		result?: unknown
+		error?: string
+	}
+	// A missing shape is a real failure (exit 1), not a value to print — the
+	// caller asked to focus something that isn't there.
+	if (!reply.success) throw new Error(reply.error ?? 'focus failed')
+	await writeStdout(JSON.stringify(reply.result) + '\n')
+}

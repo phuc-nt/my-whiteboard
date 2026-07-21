@@ -102,3 +102,30 @@ describe('exportBoardToMermaid — kind coverage', () => {
 		expect(exportBoardToMermaid(qr)).toContain('classDef queue')
 	})
 })
+
+describe('exportBoardToMermaid — frames become subgraphs', () => {
+	const framed: SerializedRecord[] = [
+		rec({ id: 'shape:f1', typeName: 'shape', type: 'frame', index: 'a1', props: { name: 'backend', w: 200, h: 200 } }),
+		rec({ id: 'shape:api', typeName: 'shape', type: 'service-node', index: 'a2', parentId: 'shape:f1', props: { name: 'api', kind: 'api' } }),
+		rec({ id: 'shape:db', typeName: 'shape', type: 'service-node', index: 'a3', parentId: 'shape:f1', props: { name: 'db', kind: 'db' } }),
+		rec({ id: 'shape:ui', typeName: 'shape', type: 'service-node', index: 'a4', parentId: 'page:page', props: { name: 'ui', kind: 'web' } })
+	]
+
+	it('wraps framed nodes in a subgraph and leaves page-level nodes flat', () => {
+		const out = exportBoardToMermaid(framed)
+		expect(out).toContain('subgraph n_f1["backend"]')
+		expect(out).toContain('end')
+		// members indented inside the subgraph
+		expect(out).toMatch(/subgraph n_f1\["backend"\]\n {4}n_api\["api"\]:::api/)
+		// ungrouped node declared once, outside any subgraph
+		const uiDecls = out.split('\n').filter((l) => l.includes('n_ui["ui"]'))
+		expect(uiDecls).toHaveLength(1)
+	})
+
+	it('renders a board with no frames byte-identical to before (backward compat)', () => {
+		// records without any frame → output unchanged from the pre-frames path
+		const out = exportBoardToMermaid(records)
+		expect(out).not.toContain('subgraph')
+		expect(out.startsWith('flowchart LR\n  n_')).toBe(true)
+	})
+})

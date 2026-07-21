@@ -48,13 +48,15 @@ async function connectMcp(serverJsonEnv: string): Promise<{ client: Client; clos
 	return { client, close: () => transport.close() }
 }
 
-test('lists the six tools with schemas', async () => {
+test('lists the eight tools with schemas', async () => {
 	const { client, close } = await connectMcp(serverJsonPath())
 	try {
 		const { tools } = await client.listTools()
 		const names = tools.map((t) => t.name).sort()
 		expect(names).toEqual([
 			'exec',
+			'export_svg',
+			'focus_shape',
 			'list_documents',
 			'read_bindings',
 			'read_shapes',
@@ -179,6 +181,59 @@ test('screenshot returns image content', async () => {
 		expect(res.content[0].type).toBe('image')
 		expect(res.content[0].mimeType).toBe('image/png')
 		expect((res.content[0].data ?? '').length).toBeGreaterThan(100)
+	} finally {
+		await close()
+	}
+})
+
+test('export_svg returns a layout-faithful SVG string of the open document', async () => {
+	const { client, close } = await connectMcp(serverJsonPath())
+	try {
+		await client.callTool({
+			name: 'exec',
+			arguments: {
+				documentId: docId,
+				code: `const id = tldraw.createShapeId(); editor.createShape({ id, type: 'service-node', x: 30, y: 30, props: { name: 'svg-mcp', kind: 'web' } }); return true`
+			}
+		})
+		const res = (await client.callTool({
+			name: 'export_svg',
+			arguments: { documentId: docId }
+		})) as { content: Array<{ type: string; text: string }>; isError?: boolean }
+		expect(res.isError).toBeFalsy()
+		const svg = JSON.parse(res.content[0].text) as string
+		expect(svg.startsWith('<svg')).toBe(true)
+		expect(svg).toContain('svg-mcp')
+	} finally {
+		await close()
+	}
+})
+
+test('focus_shape moves the camera to a shape; unknown id is an error', async () => {
+	const { client, close } = await connectMcp(serverJsonPath())
+	try {
+		const made = (await client.callTool({
+			name: 'exec',
+			arguments: {
+				documentId: docId,
+				code: `const { createShapeId } = tldraw; const id = createShapeId(); editor.createShape({ id, type: 'service-node', x: 5000, y: 5000, props: { name: 'focus-target', kind: 'db' } }); return id`
+			}
+		})) as { content: Array<{ type: string; text: string }> }
+		const shapeId = JSON.parse(made.content[0].text).result as string
+
+		const res = (await client.callTool({
+			name: 'focus_shape',
+			arguments: { documentId: docId, shapeId }
+		})) as { content: Array<{ type: string; text: string }>; isError?: boolean }
+		expect(res.isError).toBeFalsy()
+		expect(JSON.parse(res.content[0].text)).toEqual({ focused: shapeId })
+
+		const bad = (await client.callTool({
+			name: 'focus_shape',
+			arguments: { documentId: docId, shapeId: 'shape:nope' }
+		})) as { content: Array<{ type: string; text: string }>; isError?: boolean }
+		expect(bad.isError).toBe(true)
+		expect(bad.content[0].text).toContain('nope')
 	} finally {
 		await close()
 	}

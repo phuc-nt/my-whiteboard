@@ -213,6 +213,28 @@ describe('mywb file mermaid', () => {
 		)) as { code: number }
 		expect(error.code).toBe(2)
 	})
+
+	it('scaffolds groups into frames and renders them as mermaid subgraphs', async () => {
+		const dir = await tempDir()
+		const modelPath = join(dir, 'model.json')
+		const board = join(dir, 'board.mywb')
+		await writeFile(
+			modelPath,
+			JSON.stringify({
+				components: [
+					{ name: 'ui', kind: 'web' },
+					{ name: 'api', kind: 'api' },
+					{ name: 'db', kind: 'db' }
+				],
+				edges: [{ from: 'ui', to: 'api', relation: 'calls' }],
+				groups: [{ name: 'backend', members: ['api', 'db'] }]
+			})
+		)
+		await run(process.execPath, [CLI, 'file', 'scaffold', modelPath, board])
+		const { stdout } = await run(process.execPath, [CLI, 'file', 'mermaid', board])
+		expect(stdout).toContain('subgraph')
+		expect(stdout).toContain('["backend"]')
+	})
 })
 
 describe('mywb vendored dist', () => {

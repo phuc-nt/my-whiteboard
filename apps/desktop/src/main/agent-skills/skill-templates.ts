@@ -32,8 +32,11 @@ claude mcp add mywb -- mywb mcp
 
 Tools: \`list_documents\`, \`read_shapes({ documentId, detail? })\` (detail
 "summary" is much cheaper on large boards), \`read_bindings({ documentId })\`,
-\`screenshot({ documentId })\`, \`exec({ documentId, code })\`, and
-\`scaffold_board({ model, targetPath })\` to build a board file headlessly.
+\`screenshot({ documentId })\`, \`export_svg({ documentId })\` (vector,
+diffable), \`exec({ documentId, code })\`,
+\`scaffold_board({ model, targetPath })\` to build a board file headlessly
+(model takes optional \`groups\` for subsystem frames), and
+\`focus_shape({ documentId, shapeId })\` to point the open canvas at a shape.
 The exec tool runs JS against the live editor, same semantics as the shell
 paths below.
 

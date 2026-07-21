@@ -138,3 +138,89 @@ describe('buildBoardFromModel', () => {
 		).rejects.toThrow(/twin/)
 	})
 })
+
+describe('buildBoardFromModel — groups (frames)', () => {
+	const grouped: BoardModel = {
+		documentId: 'grouped-demo',
+		components: [
+			{ name: 'ui', kind: 'web' },
+			{ name: 'api', kind: 'api' },
+			{ name: 'worker', kind: 'app' },
+			{ name: 'db', kind: 'db' },
+			{ name: 'loner', kind: 'tool' }
+		],
+		edges: [{ from: 'ui', to: 'api', relation: 'calls' }],
+		groups: [
+			{ name: 'frontend', members: ['ui'] },
+			{ name: 'backend', members: ['api', 'worker', 'db'] }
+		]
+	}
+
+	it('creates a frame per group and parents member nodes into it', async () => {
+		const file = await tempFile()
+		await buildBoardFromModel(file, grouped)
+		const doc = await readMywbDocument(file)
+		const shapes = doc.records
+			.filter((r) => r.typeName === 'shape')
+			.map((r) => JSON.parse(r.json) as { id: string; type: string; parentId: string; props: Record<string, unknown> })
+		const frames = shapes.filter((s) => s.type === 'frame')
+		expect(frames.map((f) => f.props.name).sort()).toEqual(['backend', 'frontend'])
+
+		const nodeByName = new Map(
+			shapes.filter((s) => s.type === 'service-node').map((s) => [s.props.name as string, s])
+		)
+		const frameByName = new Map(frames.map((f) => [f.props.name as string, f]))
+		// members parented into their frame
+		expect(nodeByName.get('ui')!.parentId).toBe(frameByName.get('frontend')!.id)
+		expect(nodeByName.get('api')!.parentId).toBe(frameByName.get('backend')!.id)
+		expect(nodeByName.get('db')!.parentId).toBe(frameByName.get('backend')!.id)
+		// a component in no group stays parented to the page, not a frame
+		expect(nodeByName.get('loner')!.parentId.startsWith('page:')).toBe(true)
+
+		// Members use frame-relative coords (tldraw composes the frame transform
+		// onto children) and stack vertically — locking this guards against a
+		// silent shift to page-absolute that parentId checks wouldn't catch.
+		const backend = ['api', 'worker', 'db'].map((n) => nodeByName.get(n)! as unknown as { x: number; y: number })
+		for (const m of backend) expect(m.x).toBe(24) // FRAME_PAD
+		const ys = backend.map((m) => m.y).sort((a, b) => a - b)
+		expect(ys[0]).toBe(24) // first member at FRAME_PAD
+		expect(ys[1]).toBeGreaterThan(ys[0]) // stacked, not overlapping
+		expect(ys[2]).toBeGreaterThan(ys[1])
+	})
+
+	it('rejects a group member that names no component', async () => {
+		const file = await tempFile()
+		await expect(
+			buildBoardFromModel(file, {
+				components: [{ name: 'a', kind: 'lib' }],
+				edges: [],
+				groups: [{ name: 'g', members: ['ghost'] }]
+			})
+		).rejects.toThrow(/ghost/)
+	})
+
+	it('rejects a component that belongs to two groups', async () => {
+		const file = await tempFile()
+		await expect(
+			buildBoardFromModel(file, {
+				components: [{ name: 'a', kind: 'lib' }],
+				edges: [],
+				groups: [
+					{ name: 'g1', members: ['a'] },
+					{ name: 'g2', members: ['a'] }
+				]
+			})
+		).rejects.toThrow(/a.*two groups|two groups.*a|belongs to more than one/i)
+	})
+
+	it('rejects an empty group', async () => {
+		const file = await tempFile()
+		await expect(
+			buildBoardFromModel(file, {
+				components: [{ name: 'a', kind: 'lib' }],
+				edges: [],
+				groups: [{ name: 'empty', members: [] }]
+			})
+		).rejects.toThrow(/empty/)
+	})
+})

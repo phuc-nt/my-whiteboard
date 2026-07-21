@@ -117,7 +117,8 @@ push. Data access is just `node <cli.js> file read <board> --json`.
 ## Creating a board from scratch (when asked to bootstrap)
 
 Prefer `file scaffold` over hand-building records: write a model JSON
-(`components` with `name`/`kind`/`repoUrl`, `edges` with
+(`components` with `name`/`kind`/`repoUrl`, optional `groups` with
+`name`/`members` to frame a subsystem, `edges` with
 `from`/`to`/`relation`) and run
 `node <cli.js> file scaffold model.json <board.mywb>`.
 

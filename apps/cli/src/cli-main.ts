@@ -2,7 +2,7 @@
 // warning filter, so node:sqlite (pulled in transitively here) loads with the
 // filter already in place.
 import { parseArgs } from 'node:util'
-import { runAppDocs, runAppExec, runAppSearch } from './app-commands'
+import { runAppDocs, runAppExec, runAppFocus, runAppSearch, runAppSvg } from './app-commands'
 import { runFileApply } from './file-apply-command'
 import { MERMAID_SYNTAXES, runFileMermaid } from './file-mermaid-command'
 import { runFileRead } from './file-read-command'
@@ -29,6 +29,10 @@ const USAGE = `Usage:
   mywb app search [<js>|-]              Run read-only JS in the app's search context
                                         (api.getDocs/getShapes/...); code from arg or stdin
   mywb app exec <documentId> [<js>|-]   Run JS against the live editor of an open document
+  mywb app svg <documentId>             Print the document's current page as an SVG (vector,
+                                        diffable) — pipe to a .svg file
+  mywb app focus <documentId> <shapeId> Pan/zoom the open canvas to a shape and select it
+                                        (e.g. jump to a drift finding's shape id)
   mywb mcp                              Run a stdio MCP server exposing the app's
                                         canvas as tools (add with: claude mcp add)
   mywb --help                           Show this help
@@ -111,6 +115,14 @@ async function main(): Promise<void> {
 		if (command === 'exec' && rest.length >= 1 && rest.length <= 2) {
 			if (rest.length === 1 && stdinIsTty) usageExit(2)
 			await runAppExec(rest[0], rest[1], serverJson)
+			return
+		}
+		if (command === 'svg' && rest.length === 1) {
+			await runAppSvg(rest[0], serverJson)
+			return
+		}
+		if (command === 'focus' && rest.length === 2) {
+			await runAppFocus(rest[0], rest[1], serverJson)
 			return
 		}
 		usageExit(2)

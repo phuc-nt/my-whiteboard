@@ -65,6 +65,57 @@ test('app exec creates a shape on the live canvas, app search reads it back', as
 	expect(names.result).toContain('cli-made')
 })
 
+test('app svg prints a raw, layout-faithful SVG of the live canvas', async () => {
+	await cli([
+		'app',
+		'exec',
+		docId,
+		`const id = tldraw.createShapeId()
+		 editor.createShape({ id, type: 'service-node', x: 120, y: 120, props: { name: 'svg-node', kind: 'db' } })
+		 return true`
+	])
+	const { stdout } = await cli(['app', 'svg', docId])
+	expect(stdout.trimStart().startsWith('<svg')).toBe(true)
+	expect(stdout).toContain('svg-node')
+})
+
+test('app focus moves the camera to a shape; unknown id exits 1', async () => {
+	const made = await cli([
+		'app',
+		'exec',
+		docId,
+		`const { createShapeId } = tldraw
+		 const id = createShapeId()
+		 editor.createShape({ id, type: 'service-node', x: 4000, y: 4000, props: { name: 'far-away', kind: 'api' } })
+		 return id`
+	])
+	const shapeId = (JSON.parse(made.stdout) as { result: string }).result
+
+	// getCamera needs the editor, which lives in exec (not the search api).
+	const before = JSON.parse(
+		(await cli(['app', 'exec', docId, 'return editor.getCamera()'])).stdout
+	) as { result: { x: number; y: number; z: number } }
+
+	const focus = JSON.parse((await cli(['app', 'focus', docId, shapeId])).stdout) as { focused: string }
+	expect(focus.focused).toBe(shapeId)
+
+	const after = JSON.parse(
+		(await cli(['app', 'exec', docId, 'return editor.getCamera()'])).stdout
+	) as { result: { x: number; y: number; z: number } }
+	// A shape at 4000,4000 is offscreen from the initial camera, so focusing it
+	// must move the camera.
+	expect(after.result).not.toEqual(before.result)
+
+	const error = (await cli(['app', 'focus', docId, 'shape:does-not-exist']).then(
+		() => {
+			throw new Error('expected focus on missing shape to fail')
+		},
+		(e: { code: number; stderr: string }) => e
+	)) as { code: number; stderr: string }
+	expect(error.code).toBe(1)
+	expect(error.stderr).toContain('does-not-exist')
+})
+
 test('missing server.json → exit 1 with a not-running message', async () => {
 	const error = (await run(process.execPath, [CLI, 'app', 'docs'], {
 		env: { ...process.env, MYWB_SERVER_JSON: '/nonexistent/server.json' }

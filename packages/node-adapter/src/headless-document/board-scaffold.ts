@@ -26,11 +26,19 @@ export interface BoardModelEdge {
 	relation: string
 }
 
+export interface BoardModelGroup {
+	name: string
+	/** Component names that live inside this subsystem frame. */
+	members: string[]
+}
+
 export interface BoardModel {
 	title?: string
 	documentId?: string
 	components: BoardModelComponent[]
 	edges: BoardModelEdge[]
+	/** Optional subsystem frames grouping components; each component in at most one. */
+	groups?: BoardModelGroup[]
 }
 
 // Reading order of an architecture board: entry surfaces on top, gateways
@@ -68,29 +76,93 @@ export async function buildBoardFromModel(targetPath: string, model: BoardModel)
 		}
 	}
 
-	const store = createHeadlessStore()
+	// Which frame each component belongs to (validated), so nodes get parented
+	// into their subsystem instead of the page.
+	const groupOfMember = new Map<string, string>()
+	for (const g of model.groups ?? []) {
+		if (g.members.length === 0) throw new Error(`group "${g.name}" is empty`)
+		for (const member of g.members) {
+			if (!names.has(member)) {
+				throw new Error(`group "${g.name}": no component named "${member}"`)
+			}
+			if (groupOfMember.has(member)) {
+				throw new Error(`component "${member}" belongs to more than one group`)
+			}
+			groupOfMember.set(member, g.name)
+		}
+	}
 
-	// Service nodes, laid out row-by-kind, column per row.
+	const store = createHeadlessStore()
+	const initialSnapshot = captureFullSnapshot(store)
+	const pageId = initialSnapshot.records.find((r) => r.typeName === 'page')?.id
+	if (!pageId) throw new Error('document has no page record')
+
+	// Frames first (top row of boxes), so member nodes can be parented into
+	// them. Frame content coordinates are relative to the frame's own origin.
+	const FRAME_PAD = 24
+	const MEMBER_W = 220
+	const MEMBER_H = 96
+	const MEMBER_GAP = 30
+	const frameIdByName = new Map<string, string>()
+	;(model.groups ?? []).forEach((g, gi) => {
+		const rows = g.members.length
+		const frameId = `shape:frame-${gi}`
+		frameIdByName.set(g.name, frameId)
+		store.put([
+			{
+				id: frameId,
+				typeName: 'shape',
+				type: 'frame',
+				x: ORIGIN.x + gi * (MEMBER_W + FRAME_PAD * 2 + 60),
+				y: ORIGIN.y,
+				rotation: 0,
+				index: `a${gi + 1}` as IndexKey,
+				parentId: pageId,
+				isLocked: false,
+				opacity: 1,
+				meta: {},
+				props: {
+					w: MEMBER_W + FRAME_PAD * 2,
+					h: FRAME_PAD * 2 + rows * MEMBER_H + (rows - 1) * MEMBER_GAP,
+					name: g.name,
+					color: 'black'
+				}
+			} as never
+		])
+	})
+
+	// Service nodes. Grouped nodes stack vertically inside their frame (relative
+	// coords); ungrouped nodes keep the kind-row layout on the page below.
 	const idByName = new Map<string, string>()
 	const columns = new Map<number, number>()
+	const memberSlot = new Map<string, number>()
+	// Ungrouped nodes start a row or two below the frames.
+	const ungroupedYOffset = (model.groups?.length ?? 0) > 0 ? ROW_STEP * 3 : 0
 	for (const c of model.components) {
 		const snapshot = captureFullSnapshot(store)
 		const record = makeServiceNodeRecord(
 			{ name: c.name, kind: c.kind, repoUrl: c.repoUrl, ownerTeam: c.ownerTeam },
 			snapshot.records
-		) as { id: string; x: number; y: number }
-		const row = ROW_BY_KIND[c.kind]
-		const column = columns.get(row) ?? 0
-		columns.set(row, column + 1)
-		record.x = ORIGIN.x + column * COLUMN_STEP
-		record.y = ORIGIN.y + row * ROW_STEP
+		) as { id: string; x: number; y: number; parentId: string }
+		const groupName = groupOfMember.get(c.name)
+		if (groupName) {
+			record.parentId = frameIdByName.get(groupName)!
+			const slot = memberSlot.get(groupName) ?? 0
+			memberSlot.set(groupName, slot + 1)
+			record.x = FRAME_PAD
+			record.y = FRAME_PAD + slot * (MEMBER_H + MEMBER_GAP)
+		} else {
+			const row = ROW_BY_KIND[c.kind]
+			const column = columns.get(row) ?? 0
+			columns.set(row, column + 1)
+			record.x = ORIGIN.x + column * COLUMN_STEP
+			record.y = ORIGIN.y + ungroupedYOffset + row * ROW_STEP
+		}
 		store.put([record as never])
 		idByName.set(c.name, record.id)
 	}
 
 	const snapshot = captureFullSnapshot(store)
-	const pageId = snapshot.records.find((r) => r.typeName === 'page')?.id
-	if (!pageId) throw new Error('document has no page record')
 	let topIndex = snapshot.records
 		.filter((r) => r.typeName === 'shape')
 		.map((r) => (JSON.parse(r.json) as { index: IndexKey }).index)
