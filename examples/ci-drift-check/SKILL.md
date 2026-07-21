@@ -32,6 +32,9 @@ which kind.
 - **Arrows/bindings** — plain tldraw arrow shapes and `typeName: "binding"`
   records connect shapes; an arrow from service A to service B reads as "A
   calls/depends on B". Match endpoints via the binding records' shape ids.
+- **`frame`** — a subsystem grouping. `record.props.name` is the subsystem
+  name; the service-nodes with `parentId` equal to the frame's id are its
+  members. The claim is "subsystem &lt;name&gt; consists of {member names}".
 
 ## Scoping (step 0)
 
@@ -56,13 +59,19 @@ Decide which claims to actually evaluate before reading any code:
 
 ## Drift procedure
 
-1. Parse `diagram.json`; collect every `service-node`, `code-ref`, and
-   arrow-implied edge as claims. Apply scoping (step 0).
+1. Parse `diagram.json`; collect every `service-node`, `code-ref`, `frame`,
+   and arrow-implied edge as claims. Apply scoping (step 0).
 2. For each in-scope claim, look for evidence in the repository
    (Grep/Glob/Read): service names in code/config/deploy files, `repoUrl`
    paths existing, `code-ref` files and line ranges (content moved
    substantially since `sha` counts as drift), called services actually
-   referenced.
+   referenced. For a `frame` claim, check that its members' `repoUrl` paths
+   share a subsystem — i.e. sit under a common directory root. Members
+   scattered under a shared root are `ok`; one member whose `repoUrl` sits in
+   a clearly unrelated tree is `drifted` (it likely belongs to another
+   subsystem); a member with no `repoUrl` is `unverifiable`. A subsystem may
+   legitimately span a few directories, so only flag a member that is *clearly*
+   an outlier — when unsure, `unverifiable`.
 3. Classify each claim: `ok`, `drifted` (evidence contradicts), or
    `unverifiable` (no evidence either way — say so, do not guess).
    Also check the reverse direction — dependencies in the code that the
@@ -96,13 +105,15 @@ this JSON (no prose, no markdown fences):
     { "id": "shape:ghi", "type": "code-ref", "claim": "kind enum at util.tsx:8",
       "status": "unverifiable", "note": "file exists, sha unresolvable" },
     { "id": "shape:jkl", "type": "service-node", "claim": "relay in services/agent-relay",
-      "status": "skipped-out-of-scope" }
+      "status": "skipped-out-of-scope" },
+    { "id": "shape:mno", "type": "frame", "claim": "subsystem 'backend' = api, db, worker",
+      "status": "ok", "evidence": ["src/api", "src/db", "src/worker"] }
   ],
-  "summary": { "ok": 1, "drifted": 1, "unverifiable": 1, "skipped": 1 }
+  "summary": { "ok": 2, "drifted": 1, "unverifiable": 1, "skipped": 1 }
 }
 ```
 
-Rules: `type` ∈ service-node | edge | code-ref | mermaid; `status` ∈ ok |
+Rules: `type` ∈ service-node | edge | code-ref | frame | mermaid; `status` ∈ ok |
 drifted | unverifiable | skipped-out-of-scope; `summary` counts MUST match
 the `claims` array; `evidence` is repo-relative paths (`path` or
 `path:line`); `run.scope` is `diff` or `full`.

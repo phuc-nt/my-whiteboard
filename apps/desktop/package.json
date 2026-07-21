@@ -42,5 +42,10 @@
 		"typescript": "^5.9.0",
 		"vite": "^7.0.0",
 		"vitest": "^4.1.10"
+	},
+	"homepage": "https://github.com/phuc-nt/my-whiteboard",
+	"author": {
+		"name": "phuc-nt",
+		"email": "phucnt0@gmail.com"
 	}
 }

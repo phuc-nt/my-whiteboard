@@ -30,3 +30,5 @@ linux:
     - AppImage
     - deb
   category: Development
+  # deb packaging requires a maintainer.
+  maintainer: phuc-nt <phucnt0@gmail.com>
