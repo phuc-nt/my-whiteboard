@@ -44,7 +44,8 @@ npm run build:mac  # unsigned universal macOS DMG → apps/desktop/release/
   **Help → Install Agent Skills…**.
 - **MCP server** — `mywb mcp` (from `apps/cli`) exposes the running app's canvas
   as MCP tools (`list_documents`, `read_shapes` — full or summary detail,
-  `read_bindings`, `screenshot`, `exec`, `scaffold_board`) so any MCP client
+  `read_bindings`, `screenshot`, `export_svg`, `exec`, `scaffold_board`,
+  `focus_shape`) so any MCP client
   connects with one command:
   `claude mcp add mywb -- node apps/cli/dist/cli.js mcp`.
 - **Custom shapes** — `service-node`, `code-ref`, `mermaid-block` carry
@@ -57,8 +58,16 @@ npm run build:mac  # unsigned universal macOS DMG → apps/desktop/release/
 
 ## Architecture
 
-Rendered straight from this repo's own board — regenerate with
-`node apps/cli/dist/cli.js file mermaid docs/architecture.mywb`:
+The canvas below is [`docs/architecture.mywb`](docs/architecture.mywb)
+exported as pixel-true SVG — the real board, not a re-layout. Regenerate it
+by running `npm run e2e` (the `generate-architecture-svg` spec) after editing
+the board.
+
+![Architecture](docs/architecture.svg)
+
+<details><summary>Same board as a Mermaid diagram (renders inline, headless-verifiable)</summary>
+
+Regenerate with `node apps/cli/dist/cli.js file mermaid docs/architecture.mywb`:
 
 ```mermaid
 flowchart LR
@@ -86,6 +95,8 @@ flowchart LR
   classDef app fill:#ffedd5,stroke:#c2410c
   classDef tool fill:#ccfbf1,stroke:#0f766e
 ```
+
+</details>
 
 See [docs/system-architecture.md](docs/system-architecture.md) and
 [docs/codebase-summary.md](docs/codebase-summary.md). Roadmap (hybrid,

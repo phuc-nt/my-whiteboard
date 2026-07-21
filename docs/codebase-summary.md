@@ -58,9 +58,10 @@ apps/cli/                    # my-whiteboard-cli — bin `mywb` (self-contained 
                              #   app mode (live):      `mywb app docs|search|exec ...` — talks to the
                              #     RUNNING desktop app via server.json (per-OS userData; override
                              #     --server-json / MYWB_SERVER_JSON)
-                             #   mcp mode:             `mywb mcp` — stdio MCP server (6 tools:
-                             #     list_documents/read_shapes/read_bindings/screenshot/exec/
-                             #     scaffold_board; read_shapes has summary|full detail) over the
+                             #   mcp mode:             `mywb mcp` — stdio MCP server (8 tools:
+                             #     list_documents/read_shapes/read_bindings/screenshot/export_svg/
+                             #     exec/scaffold_board/focus_shape; read_shapes has summary|full
+                             #     detail; scaffold_board takes optional groups) over the
                              #     same agent API; @modelcontextprotocol/sdk (externalized, not bundled)
                              #   + dist/make-fixture.js for sample boards
 
