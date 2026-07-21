@@ -87,17 +87,19 @@ test('the real committed board opens and the app sees exactly what the headless 
 	expect(expectedServiceNames.length).toBeGreaterThan(0)
 
 	const docId = await waitForBoardDoc()
-	// The document appears in the registry a beat before its renderer finishes
-	// registering the exec handler — poll the first read instead of racing it.
-	let page: { shapes: Array<{ type: string; props?: { name?: string } }> } | undefined
-	for (let attempt = 0; attempt < 40 && !page; attempt++) {
+	// The document registers before its renderer finishes hydrating: getShapes
+	// briefly returns an EMPTY array, not an error. Poll until the store is
+	// actually populated (or the count matches) — a truthy-but-empty page is
+	// not "ready".
+	let page: { shapes: Array<{ type: string; props?: { name?: string } }> } = { shapes: [] }
+	for (let attempt = 0; attempt < 40 && page.shapes.length < expectedShapeCount; attempt++) {
 		try {
 			page = await api.search(`return await api.getShapes(${JSON.stringify(docId)})`)
 		} catch {
-			await new Promise((r) => setTimeout(r, 250))
+			// renderer still booting
 		}
+		if (page.shapes.length < expectedShapeCount) await new Promise((r) => setTimeout(r, 250))
 	}
-	if (!page) throw new Error('board window never became readable')
 	expect(page.shapes).toHaveLength(expectedShapeCount)
 	const appServiceNames = page.shapes
 		.filter((s) => s.type === 'service-node')
