@@ -13,6 +13,7 @@
 		"test": "vitest run"
 	},
 	"dependencies": {
+		"@dagrejs/dagre": "^3.0.0",
 		"@mywb/core": "*",
 		"yauzl": "^3.4.0",
 		"yazl": "^3.3.1",
