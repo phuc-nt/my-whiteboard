@@ -169,7 +169,19 @@ export class ServiceNodeShapeUtil extends ShapeUtil<ServiceNodeShape> {
 				{repoUrl ? (
 					<a
 						href={repoUrl}
-						onClick={(e) => e.stopPropagation()}
+						// Anchors are natively draggable: a drag that starts on the
+						// link hands the pointer to the OS drag loop mid-gesture and
+						// crashes tldraw's translate session. Never let it start.
+						draggable={false}
+						onDragStart={(e) => e.preventDefault()}
+						onClick={(e) => {
+							e.preventDefault()
+							e.stopPropagation()
+							// Real URLs open in the external browser (the window-open
+							// handler routes http/https to the OS); repo-relative
+							// paths are agent-facing data, not navigation targets.
+							if (/^https?:\/\//.test(repoUrl)) window.open(repoUrl)
+						}}
 						style={{ fontSize: 12, color: accent, textDecoration: 'underline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
 					>
 						{repoUrl.replace(/^https?:\/\//, '')}

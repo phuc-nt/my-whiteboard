@@ -16,7 +16,10 @@ import type { LoadedMywb } from '@mywb/web-adapter/editor-bridge'
 //   host → { type: 'request-save' }           serialize and answer with bytes
 //   this → { type: 'save-result', bytes }
 
-const assetUrls = getAssetUrlsByImport()
+// Pass-through: formatAssetUrl only treats http(s) as absolute, so under the
+// vscode-webview:// origin it would mangle the vite-resolved font/icon URLs
+// (same bug as the desktop's mywb-app:// scheme).
+const assetUrls = getAssetUrlsByImport((url) => url)
 
 const vscode = (
 	window as unknown as { acquireVsCodeApi(): { postMessage(message: unknown): void } }

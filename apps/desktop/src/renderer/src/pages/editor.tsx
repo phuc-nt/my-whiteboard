@@ -15,7 +15,11 @@ import { documentAssetStore } from '../document-assets'
 // full-snapshot capture used by Save.
 
 // Bundled by Vite — the app never fetches fonts/icons/translations from a CDN.
-const assetUrls = getAssetUrlsByImport()
+// Pass the vite-resolved URLs through untouched: tldraw's formatAssetUrl only
+// treats http(s) URLs as absolute, so under our mywb-app:// origin it would
+// mangle them into /mywb-app://... — killing every font and UI icon (and the
+// canvas with them on the next text re-measure).
+const assetUrls = getAssetUrlsByImport((url) => url)
 
 export function EditorPage() {
 	const cleanupRef = useRef<(() => void) | null>(null)
