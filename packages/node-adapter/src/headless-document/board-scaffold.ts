@@ -1,10 +1,12 @@
+import type { BoardModel } from '@mywb/core/model'
+import { groupMembershipOf, parseBoardModel } from '@mywb/core/model'
 import { captureFullSnapshot } from '@mywb/core/sync'
-import type { ServiceKind } from '@mywb/core/shapes'
 import type { IndexKey } from 'tldraw'
 import { getIndexAbove } from 'tldraw'
 import { createHeadlessStore } from './create-headless-store'
 import { layoutBoardGraph } from './dagre-board-layout'
 import { makeServiceNodeRecord } from './fixture-builder'
+import { makeEdgeRecords, makeFrameRecord, makeTitleRecord, NODE_H, NODE_W } from './scaffold-record-builders'
 import { writeMywbArchiveFromRecords } from './write-mywb-archive'
 
 // Builds a complete architecture board from a declarative model: positioned
@@ -12,82 +14,20 @@ import { writeMywbArchiveFromRecords } from './write-mywb-archive'
 // record goes through the app's real store schema — whatever this accepts,
 // the desktop canvas accepts. Grown out of the hand-written generator used to
 // bootstrap the first two drift-check boards.
+//
+// The model's shape and invariants live in @mywb/core/model so the reverse
+// direction (extract) validates against exactly the same contract.
 
-export interface BoardModelComponent {
-	name: string
-	kind: ServiceKind
-	repoUrl?: string
-	ownerTeam?: string
-}
+export type {
+	BoardModel,
+	BoardModelComponent,
+	BoardModelEdge,
+	BoardModelGroup
+} from '@mywb/core/model'
 
-export interface BoardModelEdge {
-	from: string
-	to: string
-	/** Stored on the arrow as meta.relation (calls | depends-on | reads | ...). */
-	relation: string
-}
-
-export interface BoardModelGroup {
-	name: string
-	/** Component names that live inside this subsystem frame. */
-	members: string[]
-}
-
-export interface BoardModel {
-	title?: string
-	documentId?: string
-	components: BoardModelComponent[]
-	edges: BoardModelEdge[]
-	/** Optional subsystem frames grouping components; each component in at most one. */
-	groups?: BoardModelGroup[]
-}
-
-const SERVICE_KINDS: readonly ServiceKind[] = ['web', 'app', 'tool', 'api', 'lib', 'db', 'queue', 'cron']
-// Default card footprint the layout engine plans around; matches the
-// service-node shape's default props.
-const NODE_W = 220
-const NODE_H = 96
-const TITLE_X = 80
-
-export async function buildBoardFromModel(targetPath: string, model: BoardModel): Promise<void> {
-	const names = new Set<string>()
-	for (const c of model.components) {
-		if (names.has(c.name)) throw new Error(`duplicate component name: "${c.name}"`)
-		names.add(c.name)
-		if (!SERVICE_KINDS.includes(c.kind)) {
-			throw new Error(
-				`component "${c.name}": unknown kind "${c.kind}" (expected one of ${SERVICE_KINDS.join(', ')})`
-			)
-		}
-	}
-	for (const e of model.edges) {
-		for (const endpoint of [e.from, e.to]) {
-			if (!names.has(endpoint)) {
-				throw new Error(`edge ${e.from} -> ${e.to}: no component named "${endpoint}"`)
-			}
-		}
-	}
-
-	// Which frame each component belongs to (validated), so nodes get parented
-	// into their subsystem instead of the page.
-	const groupOfMember = new Map<string, string>()
-	const groupNames = new Set<string>()
-	for (const g of model.groups ?? []) {
-		// Frames are keyed by name downstream (layout, frameIdByName); a repeat
-		// would silently orphan one frame and mis-parent its members.
-		if (groupNames.has(g.name)) throw new Error(`duplicate group name: "${g.name}"`)
-		groupNames.add(g.name)
-		if (g.members.length === 0) throw new Error(`group "${g.name}" is empty`)
-		for (const member of g.members) {
-			if (!names.has(member)) {
-				throw new Error(`group "${g.name}": no component named "${member}"`)
-			}
-			if (groupOfMember.has(member)) {
-				throw new Error(`component "${member}" belongs to more than one group`)
-			}
-			groupOfMember.set(member, g.name)
-		}
-	}
+export async function buildBoardFromModel(targetPath: string, rawModel: BoardModel): Promise<void> {
+	const model = parseBoardModel(rawModel)
+	const groupOfMember = groupMembershipOf(model)
 
 	const store = createHeadlessStore()
 	const initialSnapshot = captureFullSnapshot(store)
@@ -110,20 +50,16 @@ export async function buildBoardFromModel(targetPath: string, model: BoardModel)
 		const frameId = `shape:frame-${gi}`
 		frameIdByName.set(g.name, frameId)
 		store.put([
-			{
+			makeFrameRecord({
 				id: frameId,
-				typeName: 'shape',
-				type: 'frame',
+				name: g.name,
 				x: rect.x,
 				y: rect.y,
-				rotation: 0,
+				w: rect.w,
+				h: rect.h,
 				index: `a${gi + 1}` as IndexKey,
-				parentId: pageId,
-				isLocked: false,
-				opacity: 1,
-				meta: {},
-				props: { w: rect.w, h: rect.h, name: g.name, color: 'black' }
-			} as never
+				pageId
+			}) as never
 		])
 	})
 
@@ -153,96 +89,29 @@ export async function buildBoardFromModel(targetPath: string, model: BoardModel)
 		topIndex = topIndex ? getIndexAbove(topIndex) : ('a1' as IndexKey)
 		return topIndex
 	}
-	const emptyRichText = { type: 'doc', content: [{ type: 'paragraph' }] }
 
 	if (model.title) {
 		store.put([
-			{
-				id: `shape:title-${model.documentId ?? 'board'}`,
-				typeName: 'shape',
-				type: 'text',
-				x: TITLE_X,
-				y: 20,
-				rotation: 0,
+			makeTitleRecord({
+				documentId: model.documentId ?? 'board',
+				title: model.title,
 				index: nextIndex(),
-				parentId: pageId,
-				isLocked: false,
-				opacity: 1,
-				meta: {},
-				props: {
-					color: 'black',
-					size: 'm',
-					w: 8,
-					font: 'draw',
-					textAlign: 'start',
-					autoSize: true,
-					scale: 1,
-					richText: {
-						type: 'doc',
-						content: [{ type: 'paragraph', content: [{ type: 'text', text: model.title }] }]
-					}
-				}
-			} as never
+				pageId
+			}) as never
 		])
 	}
 
 	model.edges.forEach((edge, i) => {
-		const arrowId = `shape:edge-${i}`
-		store.put([
-			{
-				id: arrowId,
-				typeName: 'shape',
-				type: 'arrow',
-				x: 0,
-				y: 0,
-				rotation: 0,
-				index: nextIndex(),
-				parentId: pageId,
-				isLocked: false,
-				opacity: 1,
-				meta: { relation: edge.relation },
-				props: {
-					kind: 'arc',
-					elbowMidPoint: 0.5,
-					dash: 'draw',
-					size: 'm',
-					fill: 'none',
-					color: 'black',
-					labelColor: 'black',
-					bend: 0,
-					start: { x: 0, y: 0 },
-					end: { x: 2, y: 0 },
-					arrowheadStart: 'none',
-					arrowheadEnd: 'arrow',
-					richText: emptyRichText,
-					labelPosition: 0.5,
-					font: 'draw',
-					scale: 1
-				}
-			} as never
-		])
-		for (const [terminal, componentName] of [
-			['start', edge.from],
-			['end', edge.to]
-		] as const) {
-			store.put([
-				{
-					id: `binding:edge-${i}-${terminal}`,
-					typeName: 'binding',
-					type: 'arrow',
-					fromId: arrowId,
-					toId: idByName.get(componentName)!,
-					meta: {},
-					props: {
-						isPrecise: false,
-						isExact: false,
-						normalizedAnchor: { x: 0.5, y: 0.5 },
-						snap: 'none',
-						terminal
-					}
-				} as never
-			])
-		}
+		store.put(
+			makeEdgeRecords({
+				index: i,
+				edge,
+				fromShapeId: idByName.get(edge.from)!,
+				toShapeId: idByName.get(edge.to)!,
+				shapeIndex: nextIndex(),
+				pageId
+			}) as never[]
+		)
 	})
 
 	const { records, schemaJson } = captureFullSnapshot(store)

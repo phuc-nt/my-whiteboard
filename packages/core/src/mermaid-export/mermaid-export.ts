@@ -2,6 +2,9 @@ import type { SerializedRecord } from '../format'
 
 // Deterministic board → Mermaid text. Pure data transform so every surface
 // (CLI today, app/web later) renders the same diagram for the same records.
+// Node ids come from component names rather than shape ids, so regenerating a
+// board from its model produces the same text — a README's embedded diagram
+// diffs only where the architecture actually changed.
 // Flowchart is the default because GitHub renders it natively in READMEs;
 // C4Context is an approximation: only db/queue have dedicated element types,
 // every other kind becomes System with the kind in the description.
@@ -65,9 +68,32 @@ function parseShapes(records: SerializedRecord[]): ParsedShape[] {
 		.sort((a, b) => (a.index === b.index ? a.id.localeCompare(b.id) : a.index < b.index ? -1 : 1))
 }
 
-/** Stable mermaid-safe node id derived from the shape id. */
-function nodeId(shapeId: string): string {
-	return `n_${shapeId.replace(/^shape:/, '').replace(/[^A-Za-z0-9_]/g, '_')}`
+/** Mermaid-safe token from arbitrary text; empty when nothing survives. */
+function slug(text: string): string {
+	return text.replace(/[^A-Za-z0-9_]/g, '_').replace(/^_+|_+$/g, '')
+}
+
+/**
+ * Mermaid ids keyed by the component/frame NAME, not the shape id. Shape ids are
+ * random per scaffold run, so id-derived output changed on every regeneration
+ * and turned the README's embedded diagram into unreadable diff noise. Names are
+ * what the model declares and what a reader recognises.
+ *
+ * Falls back to the shape id when a name yields no usable token, and suffixes
+ * collisions (`n_api`, `n_api_2`) so two same-named shapes stay distinct.
+ */
+function buildNodeIds(shapes: ParsedShape[]): Map<string, string> {
+	const ids = new Map<string, string>()
+	const used = new Set<string>()
+	for (const shape of shapes) {
+		const fromName = slug(String(shape.props.name ?? ''))
+		const base = `n_${fromName || slug(shape.id.replace(/^shape:/, ''))}`
+		let id = base
+		for (let n = 2; used.has(id); n++) id = `${base}_${n}`
+		used.add(id)
+		ids.set(shape.id, id)
+	}
+	return ids
 }
 
 /** Quoted-label escape: mermaid has no quote escape, #quot; is the entity. */
@@ -75,7 +101,7 @@ function escapeLabel(text: string): string {
 	return text.replace(/"/g, '#quot;').replace(/\s*\n\s*/g, ' ')
 }
 
-function collectEdges(records: SerializedRecord[]): Edge[] {
+function collectEdges(records: SerializedRecord[], nodeIds: Map<string, string>): Edge[] {
 	const terminals = new Map<string, { start?: string; end?: string; relation: string }>()
 	const arrows = parseShapes(records).filter((s) => s.type === 'arrow')
 	for (const arrow of arrows) {
@@ -100,7 +126,10 @@ function collectEdges(records: SerializedRecord[]): Edge[] {
 		// An arrow drawn by hand but bound to fewer than two shapes makes no
 		// claim — skip it rather than fail the whole export.
 		if (!entry?.start || !entry.end) continue
-		edges.push({ from: nodeId(entry.start), to: nodeId(entry.end), relation: entry.relation })
+		const from = nodeIds.get(entry.start)
+		const to = nodeIds.get(entry.end)
+		if (!from || !to) continue
+		edges.push({ from, to, relation: entry.relation })
 	}
 	return edges
 }
@@ -111,12 +140,14 @@ export function exportBoardToMermaid(
 ): string {
 	const syntax = options.syntax ?? 'flowchart'
 	const shapes = parseShapes(records)
+	const nodeIds = buildNodeIds(shapes)
+	const nodeId = (shapeId: string): string => nodeIds.get(shapeId) ?? `n_${slug(shapeId)}`
 	const nodes = shapes.filter((s) => s.type === 'service-node')
 	const codeRefs = shapes.filter((s) => s.type === 'code-ref')
 	// Only edges between declared service-nodes: an arrow bound to a text or
 	// other shape would reference a node the diagram never declares.
 	const declared = new Set(nodes.map((n) => nodeId(n.id)))
-	const edges = collectEdges(records).filter((e) => declared.has(e.from) && declared.has(e.to))
+	const edges = collectEdges(records, nodeIds).filter((e) => declared.has(e.from) && declared.has(e.to))
 
 	// Group nodes by the frame they live in (parentId), so a subsystem frame
 	// becomes a mermaid subgraph. Nodes whose parent is not a frame render flat.

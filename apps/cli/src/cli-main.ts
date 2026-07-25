@@ -5,6 +5,7 @@ import { parseArgs } from 'node:util'
 import { runAppDocs, runAppExec, runAppFocus, runAppSearch, runAppSvg } from './app-commands'
 import { runFileApply } from './file-apply-command'
 import { MERMAID_SYNTAXES, runFileMermaid } from './file-mermaid-command'
+import { runFileModelExtract } from './file-model-command'
 import { runFileRead } from './file-read-command'
 import { runFileScaffold } from './file-scaffold-command'
 
@@ -22,6 +23,10 @@ const USAGE = `Usage:
                                         Build an architecture board from a model:
                                         {"title"?,"documentId"?,"components":[{name,kind,...}],
                                         "edges":[{from,to,relation}]}
+  mywb file model extract <path.mywb> <model.json|->
+                                        Read the board back into its model JSON (the reverse of
+                                        scaffold). \`-\` prints to stdout. Commit the model next
+                                        to the board, then edit the model and re-render
   mywb file mermaid <path.mywb> [--syntax flowchart|c4]
                                         Print the board as Mermaid text (default: flowchart,
                                         renders natively in GitHub READMEs)
@@ -87,6 +92,10 @@ async function main(): Promise<void> {
 		}
 		if (command === 'scaffold' && rest.length === 2) {
 			await runFileScaffold(rest[0], rest[1])
+			return
+		}
+		if (command === 'model' && rest[0] === 'extract' && rest.length === 3) {
+			await runFileModelExtract(rest[1], rest[2])
 			return
 		}
 		if (command === 'mermaid' && rest.length === 1) {

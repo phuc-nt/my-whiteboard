@@ -29,19 +29,19 @@ describe('exportBoardToMermaid — flowchart (default)', () => {
 
 	it('declares a flowchart with one node per service-node, classed by kind', () => {
 		expect(out.startsWith('flowchart LR')).toBe(true)
-		expect(out).toContain('n_web["web ui"]:::web')
-		expect(out).toContain('n_db["orders db"]:::db')
+		expect(out).toContain('n_web_ui["web ui"]:::web')
+		expect(out).toContain('n_orders_db["orders db"]:::db')
 		expect(out).toContain('classDef web')
 		expect(out).toContain('classDef db')
 	})
 
 	it('escapes quotes and keeps pipes safe inside quoted labels', () => {
-		expect(out).toContain('n_api["say #quot;hi#quot; | ok"]:::api')
+		expect(out).toContain('n_say__hi____ok["say #quot;hi#quot; | ok"]:::api')
 	})
 
 	it('renders edges start→end with quoted relation labels, plain arrow without', () => {
-		expect(out).toContain('n_web -->|"calls"| n_api')
-		expect(out).toContain('n_api --> n_db')
+		expect(out).toContain('n_web_ui -->|"calls"| n_say__hi____ok')
+		expect(out).toContain('n_say__hi____ok --> n_orders_db')
 	})
 
 	it('escapes hostile relation text inside the quoted edge label', () => {
@@ -52,7 +52,7 @@ describe('exportBoardToMermaid — flowchart (default)', () => {
 			rec({ id: 'binding:h2', typeName: 'binding', type: 'arrow', fromId: 'shape:e1', toId: 'shape:api', props: { terminal: 'end' } })
 		]
 		const text = exportBoardToMermaid(hostile)
-		expect(text).toContain('n_web -->|"reads|writes #quot;fast#quot; now"| n_api')
+		expect(text).toContain('n_web_ui -->|"reads|writes #quot;fast#quot; now"| n_say__hi____ok')
 		expect(text.split('\n').every((l) => !l.includes('\r'))).toBe(true)
 	})
 
@@ -77,18 +77,83 @@ describe('exportBoardToMermaid — flowchart (default)', () => {
 	})
 })
 
+describe('exportBoardToMermaid — node ids follow names, not shape ids', () => {
+	// Scaffold mints random shape ids, so id-derived output changed on every
+	// board regeneration and made the README's embedded diagram undiffable.
+	function board(idSuffix: string): SerializedRecord[] {
+		return [
+			rec({
+				id: `shape:${idSuffix}1`,
+				typeName: 'shape',
+				type: 'service-node',
+				index: 'a1',
+				props: { name: 'checkout api', kind: 'api' }
+			}),
+			rec({
+				id: `shape:${idSuffix}2`,
+				typeName: 'shape',
+				type: 'service-node',
+				index: 'a2',
+				props: { name: 'orders db', kind: 'db' }
+			}),
+			rec({ id: `shape:${idSuffix}3`, typeName: 'shape', type: 'arrow', index: 'a3', meta: { relation: 'reads' }, props: {} }),
+			rec({
+				id: `binding:${idSuffix}s`,
+				typeName: 'binding',
+				type: 'arrow',
+				fromId: `shape:${idSuffix}3`,
+				toId: `shape:${idSuffix}1`,
+				props: { terminal: 'start' }
+			}),
+			rec({
+				id: `binding:${idSuffix}e`,
+				typeName: 'binding',
+				type: 'arrow',
+				fromId: `shape:${idSuffix}3`,
+				toId: `shape:${idSuffix}2`,
+				props: { terminal: 'end' }
+			})
+		]
+	}
+
+	it('two boards of the same model with different shape ids export identical text', () => {
+		expect(exportBoardToMermaid(board('aaa'))).toBe(exportBoardToMermaid(board('zzz')))
+	})
+
+	it('derives readable ids from the component name', () => {
+		expect(exportBoardToMermaid(board('x'))).toContain('n_checkout_api -->|"reads"| n_orders_db')
+	})
+
+	it('suffixes a colliding name instead of merging two nodes into one', () => {
+		const twins = [
+			rec({ id: 'shape:t1', typeName: 'shape', type: 'service-node', index: 'a1', props: { name: 'api', kind: 'api' } }),
+			rec({ id: 'shape:t2', typeName: 'shape', type: 'service-node', index: 'a2', props: { name: 'api', kind: 'db' } })
+		]
+		const out = exportBoardToMermaid(twins)
+		expect(out).toContain('n_api["api"]:::api')
+		expect(out).toContain('n_api_2["api"]:::db')
+	})
+
+	it('falls back to the shape id when a name yields no usable token', () => {
+		const unnamed = [
+			rec({ id: 'shape:ghost', typeName: 'shape', type: 'service-node', index: 'a1', props: { name: '···', kind: 'lib' } })
+		]
+		expect(exportBoardToMermaid(unnamed)).toContain('n_ghost')
+	})
+})
+
 describe('exportBoardToMermaid — c4', () => {
 	const out = exportBoardToMermaid(records, { syntax: 'c4' })
 
 	it('maps kinds to C4 element types: db→SystemDb, others→System with kind description', () => {
 		expect(out.startsWith('C4Context')).toBe(true)
-		expect(out).toContain('System(n_web, "web ui", "web")')
-		expect(out).toContain('SystemDb(n_db, "orders db", "db")')
+		expect(out).toContain('System(n_web_ui, "web ui", "web")')
+		expect(out).toContain('SystemDb(n_orders_db, "orders db", "db")')
 	})
 
 	it('renders Rel lines with relation label and keeps code-ref comments', () => {
-		expect(out).toContain('Rel(n_web, n_api, "calls")')
-		expect(out).toContain('Rel(n_api, n_db, "")')
+		expect(out).toContain('Rel(n_web_ui, n_say__hi____ok, "calls")')
+		expect(out).toContain('Rel(n_say__hi____ok, n_orders_db, "")')
 		expect(out).toContain('%% code-ref: src/x.ts:5-10')
 	})
 })
@@ -98,7 +163,7 @@ describe('exportBoardToMermaid — kind coverage', () => {
 		const qr = [
 			rec({ id: 'shape:q', typeName: 'shape', type: 'service-node', index: 'a1', props: { name: 'jobs', kind: 'queue' } })
 		]
-		expect(exportBoardToMermaid(qr, { syntax: 'c4' })).toContain('SystemQueue(n_q, "jobs", "queue")')
+		expect(exportBoardToMermaid(qr, { syntax: 'c4' })).toContain('SystemQueue(n_jobs, "jobs", "queue")')
 		expect(exportBoardToMermaid(qr)).toContain('classDef queue')
 	})
 })
@@ -113,10 +178,10 @@ describe('exportBoardToMermaid — frames become subgraphs', () => {
 
 	it('wraps framed nodes in a subgraph and leaves page-level nodes flat', () => {
 		const out = exportBoardToMermaid(framed)
-		expect(out).toContain('subgraph n_f1["backend"]')
+		expect(out).toContain('subgraph n_backend["backend"]')
 		expect(out).toContain('end')
 		// members indented inside the subgraph
-		expect(out).toMatch(/subgraph n_f1\["backend"\]\n {4}n_api\["api"\]:::api/)
+		expect(out).toMatch(/subgraph n_backend\["backend"\]\n {4}n_api\["api"\]:::api/)
 		// ungrouped node declared once, outside any subgraph
 		const uiDecls = out.split('\n').filter((l) => l.includes('n_ui["ui"]'))
 		expect(uiDecls).toHaveLength(1)

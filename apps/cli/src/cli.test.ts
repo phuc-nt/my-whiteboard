@@ -1,6 +1,6 @@
 import { buildMywbFixture, readMywbDocument } from '@mywb/node-adapter/headless-document'
 import { execFile } from 'node:child_process'
-import { cp, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { promisify } from 'node:util'
@@ -159,6 +159,70 @@ describe('mywb file scaffold', () => {
 
 	it('missing args is a usage error: exit 2', async () => {
 		const error = (await run(process.execPath, [CLI, 'file', 'scaffold', 'only-one-arg']).then(
+			() => {
+				throw new Error('expected usage error')
+			},
+			(e: { code: number }) => e
+		)) as { code: number }
+		expect(error.code).toBe(2)
+	})
+})
+
+describe('mywb file model extract', () => {
+	const model = {
+		title: 'extract-cli-test',
+		documentId: 'extract-cli-doc',
+		components: [
+			{ name: 'ui', kind: 'web' },
+			{ name: 'api', kind: 'api', repoUrl: 'src/api' },
+			{ name: 'store', kind: 'db' }
+		],
+		edges: [
+			{ from: 'ui', to: 'api', relation: 'calls' },
+			{ from: 'api', to: 'store', relation: 'reads' }
+		],
+		groups: [{ name: 'backend', members: ['api', 'store'] }]
+	}
+
+	async function scaffolded(): Promise<{ dir: string; board: string }> {
+		const dir = await tempDir()
+		const modelPath = join(dir, 'model.json')
+		const board = join(dir, 'board.mywb')
+		await writeFile(modelPath, JSON.stringify(model))
+		await run(process.execPath, [CLI, 'file', 'scaffold', modelPath, board])
+		return { dir, board }
+	}
+
+	it('writes a model file that round-trips back to an equivalent board', async () => {
+		const { dir, board } = await scaffolded()
+		const extracted = join(dir, 'extracted.model.json')
+
+		const { stdout } = await run(process.execPath, [CLI, 'file', 'model', 'extract', board, extracted])
+		expect(JSON.parse(stdout)).toMatchObject({ components: 3, edges: 2, groups: 1 })
+
+		const written = JSON.parse(await readFile(extracted, 'utf8'))
+		expect(written.title).toBe('extract-cli-test')
+		expect(written.documentId).toBe('extract-cli-doc')
+		expect(written.groups).toEqual([{ name: 'backend', members: ['api', 'store'] }])
+
+		// The extracted model is usable as scaffold input — the loop the whole
+		// feature exists for.
+		const rebuilt = join(dir, 'rebuilt.mywb')
+		await run(process.execPath, [CLI, 'file', 'scaffold', extracted, rebuilt])
+		const before = await run(process.execPath, [CLI, 'file', 'mermaid', board])
+		const after = await run(process.execPath, [CLI, 'file', 'mermaid', rebuilt])
+		expect(after.stdout).toBe(before.stdout)
+	})
+
+	it('- prints the model to stdout so an agent can diff without a temp file', async () => {
+		const { board } = await scaffolded()
+		const { stdout } = await run(process.execPath, [CLI, 'file', 'model', 'extract', board, '-'])
+		const printed = JSON.parse(stdout)
+		expect(printed.components.map((c: { name: string }) => c.name).sort()).toEqual(['api', 'store', 'ui'])
+	})
+
+	it('missing args is a usage error: exit 2', async () => {
+		const error = (await run(process.execPath, [CLI, 'file', 'model', 'extract', 'only-one-arg']).then(
 			() => {
 				throw new Error('expected usage error')
 			},
