@@ -227,6 +227,40 @@ describe('updateBoardFromModel — human positions survive', () => {
 		expect([moved.x, moved.y]).toEqual([1234, 5678])
 	})
 
+	it('a new component does not land on top of a card the human moved into its slot', async () => {
+		const file = await tempFile()
+		await buildBoardFromModel(file, base)
+		const ui = (await shapesOf(file)).find((s) => s.props.name === 'ui')!
+
+		// Predict where dagre will put the new node, then park an existing card
+		// exactly there — the situation any hand-arranged board drifts into, since
+		// kept cards keep human coordinates while new ones come from a fresh layout.
+		const next: BoardModel = {
+			...base,
+			components: [...base.components, { name: 'cli', kind: 'tool' }],
+			edges: [...base.edges, { from: 'cli', to: 'api', relation: 'calls' }]
+		}
+		const probe = await tempFile()
+		await buildBoardFromModel(probe, next)
+		const slot = (await shapesOf(probe)).find((s) => s.props.name === 'cli')!
+		await applyRecordChanges(file, { put: [{ ...ui, x: slot.x, y: slot.y }], removed: [] })
+
+		await update(file, next)
+
+		const after = (await shapesOf(file)).filter((s) => s.type === 'service-node')
+		const moved = after.find((s) => s.props.name === 'ui')!
+		expect([moved.x, moved.y]).toEqual([slot.x, slot.y])
+		const overlaps = (a: Shape, b: Shape): boolean =>
+			a.x < b.x + (b.props.w as number) &&
+			b.x < a.x + (a.props.w as number) &&
+			a.y < b.y + (b.props.h as number) &&
+			b.y < a.y + (a.props.h as number)
+		const collisions = after.flatMap((a, i) =>
+			after.slice(i + 1).filter((b) => overlaps(a, b)).map((b) => `${a.props.name as string}/${b.props.name as string}`)
+		)
+		expect(collisions).toEqual([])
+	})
+
 	it('a resized card keeps its dimensions', async () => {
 		const file = await tempFile()
 		await buildBoardFromModel(file, base)

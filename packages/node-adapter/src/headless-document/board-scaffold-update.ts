@@ -34,6 +34,9 @@ import {
 /** Room left around kept members when a frame has to grow to contain them. */
 const FRAME_PAD = 24
 
+/** Vertical gap left when a new node has to slide past a card already there. */
+const NUDGE_GAP = 40
+
 interface ParsedShape {
 	id: string
 	type: string
@@ -224,7 +227,54 @@ export function updateBoardFromModel(existingRecords: SerializedRecord[], rawMod
 	//                         to the new parent, so the card lands where the
 	//                         human last saw it but inside the group the model
 	//                         now says it belongs to
-	//   3. new component    → dagre
+	//   3. new component    → dagre, nudged down if that slot is already taken
+	//
+	// Rule 3 needs the nudge because rules 1 and 2 make the board diverge from the
+	// layout dagre just computed: a hand-arranged card keeps coordinates dagre knows
+	// nothing about, and can be sitting exactly where the new node's slot is. Two
+	// cards drawn on top of each other read as one — the new component would look
+	// like it was never added.
+	const occupied: Array<{ parentId: string; x: number; y: number; w: number; h: number }> = []
+	for (const component of model.components) {
+		const old = oldNodeByName.get(component.name)
+		if (!old) continue
+		const groupName = groupOfMember.get(component.name)
+		const parentId = groupName ? frameIdByName.get(groupName)! : pageId
+		// Only rule 1 keeps coordinates verbatim; a card whose group changed is
+		// re-derived below, so its final slot is not known yet and it cannot be
+		// claimed here. That is safe: it is moving into a frame, not onto the page
+		// where new ungrouped nodes land.
+		if (old.parentId !== parentId) continue
+		occupied.push({
+			parentId,
+			x: old.x,
+			y: old.y,
+			w: typeof old.props.w === 'number' ? old.props.w : NODE_W,
+			h: typeof old.props.h === 'number' ? old.props.h : NODE_H
+		})
+	}
+	const freeSlot = (parentId: string, x: number, y: number): { x: number; y: number } => {
+		const hits = (at: number): boolean =>
+			occupied.some(
+				(o) =>
+					o.parentId === parentId &&
+					x < o.x + o.w &&
+					o.x < x + NODE_W &&
+					at < o.y + o.h &&
+					o.y < at + NODE_H
+			)
+		let at = y
+		// Slide straight down: the column is what dagre chose to express the
+		// component's rank, so keeping x preserves the reading order of the graph.
+		while (hits(at)) {
+			const below = occupied
+				.filter((o) => o.parentId === parentId && x < o.x + o.w && o.x < x + NODE_W && o.y + o.h > at)
+				.map((o) => o.y + o.h)
+			at = Math.min(...below) + NUDGE_GAP
+		}
+		return { x, y: at }
+	}
+
 	const idByName = new Map<string, string>()
 	const memberExtentByGroup = new Map<string, { w: number; h: number }>()
 	for (const component of model.components) {
@@ -254,6 +304,13 @@ export function updateBoardFromModel(existingRecords: SerializedRecord[], rawMod
 					y = Math.max(y, FRAME_PAD)
 				}
 			}
+		} else {
+			const slot = freeSlot(parentId, x, y)
+			x = slot.x
+			y = slot.y
+			// Claim it so two new components in the same dagre column cannot both
+			// resolve to the same free slot.
+			occupied.push({ parentId, x, y, w: NODE_W, h: NODE_H })
 		}
 
 		const id = old?.id ?? createShapeId()
