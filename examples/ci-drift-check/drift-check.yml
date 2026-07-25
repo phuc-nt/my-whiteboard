@@ -10,6 +10,9 @@
 # because that is an infrastructure error, not drift.
 #
 # Requires Node >= 22.5 (node:sqlite) and the ANTHROPIC_API_KEY repo secret.
+# The pinned actions run on Node 24, which needs Actions Runner >= 2.327.1 —
+# fine on GitHub-hosted runners; on self-hosted ones, update the runner or
+# drop the action pins back to @v4.
 # The CLI comes from npm (`npx -y mywb`). Two variants if that does not fit: in
 # the my-whiteboard monorepo it builds from source (node apps/cli/dist/cli.js),
 # and a registry-less CI vendors the built dist (see README).
@@ -32,11 +35,11 @@ jobs:
       pull-requests: write
     steps:
       # Full history so the agent's scoping step can diff against the base.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
 
@@ -121,7 +124,7 @@ jobs:
 
       - name: Upload findings artifact
         if: always() && steps.agent.outputs.enabled == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: drift-findings
           path: findings.json
