@@ -3,6 +3,7 @@ import type { ServiceKind } from '@mywb/core/shapes'
 import type { IndexKey } from 'tldraw'
 import { getIndexAbove } from 'tldraw'
 import { createHeadlessStore } from './create-headless-store'
+import { layoutBoardGraph } from './dagre-board-layout'
 import { makeServiceNodeRecord } from './fixture-builder'
 import { writeMywbArchiveFromRecords } from './write-mywb-archive'
 
@@ -41,30 +42,21 @@ export interface BoardModel {
 	groups?: BoardModelGroup[]
 }
 
-// Reading order of an architecture board: entry surfaces on top, gateways
-// next, libraries below them, storage and background jobs at the bottom.
-const ROW_BY_KIND: Record<ServiceKind, number> = {
-	web: 0,
-	app: 0,
-	tool: 0,
-	api: 1,
-	lib: 2,
-	db: 3,
-	queue: 3,
-	cron: 3
-}
-const COLUMN_STEP = 300
-const ROW_STEP = 190
-const ORIGIN = { x: 80, y: 100 }
+const SERVICE_KINDS: readonly ServiceKind[] = ['web', 'app', 'tool', 'api', 'lib', 'db', 'queue', 'cron']
+// Default card footprint the layout engine plans around; matches the
+// service-node shape's default props.
+const NODE_W = 220
+const NODE_H = 96
+const TITLE_X = 80
 
 export async function buildBoardFromModel(targetPath: string, model: BoardModel): Promise<void> {
 	const names = new Set<string>()
 	for (const c of model.components) {
 		if (names.has(c.name)) throw new Error(`duplicate component name: "${c.name}"`)
 		names.add(c.name)
-		if (!(c.kind in ROW_BY_KIND)) {
+		if (!SERVICE_KINDS.includes(c.kind)) {
 			throw new Error(
-				`component "${c.name}": unknown kind "${c.kind}" (expected one of ${Object.keys(ROW_BY_KIND).join(', ')})`
+				`component "${c.name}": unknown kind "${c.kind}" (expected one of ${SERVICE_KINDS.join(', ')})`
 			)
 		}
 	}
@@ -79,7 +71,12 @@ export async function buildBoardFromModel(targetPath: string, model: BoardModel)
 	// Which frame each component belongs to (validated), so nodes get parented
 	// into their subsystem instead of the page.
 	const groupOfMember = new Map<string, string>()
+	const groupNames = new Set<string>()
 	for (const g of model.groups ?? []) {
+		// Frames are keyed by name downstream (layout, frameIdByName); a repeat
+		// would silently orphan one frame and mis-parent its members.
+		if (groupNames.has(g.name)) throw new Error(`duplicate group name: "${g.name}"`)
+		groupNames.add(g.name)
 		if (g.members.length === 0) throw new Error(`group "${g.name}" is empty`)
 		for (const member of g.members) {
 			if (!names.has(member)) {
@@ -97,15 +94,19 @@ export async function buildBoardFromModel(targetPath: string, model: BoardModel)
 	const pageId = initialSnapshot.records.find((r) => r.typeName === 'page')?.id
 	if (!pageId) throw new Error('document has no page record')
 
-	// Frames first (top row of boxes), so member nodes can be parented into
-	// them. Frame content coordinates are relative to the frame's own origin.
-	const FRAME_PAD = 24
-	const MEMBER_W = 220
-	const MEMBER_H = 96
-	const MEMBER_GAP = 30
+	// Positions come from a real graph-layout engine: member nodes lay out
+	// inside their frame from the group's internal edges (frame-relative
+	// coords — tldraw composes the frame transform onto children), and the
+	// page level lays out frames + ungrouped nodes from the collapsed edges.
+	const layout = layoutBoardGraph(
+		model.components.map((c) => ({ name: c.name, w: NODE_W, h: NODE_H })),
+		model.edges,
+		model.groups ?? []
+	)
+
 	const frameIdByName = new Map<string, string>()
 	;(model.groups ?? []).forEach((g, gi) => {
-		const rows = g.members.length
+		const rect = layout.frames.get(g.name)!
 		const frameId = `shape:frame-${gi}`
 		frameIdByName.set(g.name, frameId)
 		store.put([
@@ -113,31 +114,20 @@ export async function buildBoardFromModel(targetPath: string, model: BoardModel)
 				id: frameId,
 				typeName: 'shape',
 				type: 'frame',
-				x: ORIGIN.x + gi * (MEMBER_W + FRAME_PAD * 2 + 60),
-				y: ORIGIN.y,
+				x: rect.x,
+				y: rect.y,
 				rotation: 0,
 				index: `a${gi + 1}` as IndexKey,
 				parentId: pageId,
 				isLocked: false,
 				opacity: 1,
 				meta: {},
-				props: {
-					w: MEMBER_W + FRAME_PAD * 2,
-					h: FRAME_PAD * 2 + rows * MEMBER_H + (rows - 1) * MEMBER_GAP,
-					name: g.name,
-					color: 'black'
-				}
+				props: { w: rect.w, h: rect.h, name: g.name, color: 'black' }
 			} as never
 		])
 	})
 
-	// Service nodes. Grouped nodes stack vertically inside their frame (relative
-	// coords); ungrouped nodes keep the kind-row layout on the page below.
 	const idByName = new Map<string, string>()
-	const columns = new Map<number, number>()
-	const memberSlot = new Map<string, number>()
-	// Ungrouped nodes start a row or two below the frames.
-	const ungroupedYOffset = (model.groups?.length ?? 0) > 0 ? ROW_STEP * 3 : 0
 	for (const c of model.components) {
 		const snapshot = captureFullSnapshot(store)
 		const record = makeServiceNodeRecord(
@@ -145,19 +135,10 @@ export async function buildBoardFromModel(targetPath: string, model: BoardModel)
 			snapshot.records
 		) as { id: string; x: number; y: number; parentId: string }
 		const groupName = groupOfMember.get(c.name)
-		if (groupName) {
-			record.parentId = frameIdByName.get(groupName)!
-			const slot = memberSlot.get(groupName) ?? 0
-			memberSlot.set(groupName, slot + 1)
-			record.x = FRAME_PAD
-			record.y = FRAME_PAD + slot * (MEMBER_H + MEMBER_GAP)
-		} else {
-			const row = ROW_BY_KIND[c.kind]
-			const column = columns.get(row) ?? 0
-			columns.set(row, column + 1)
-			record.x = ORIGIN.x + column * COLUMN_STEP
-			record.y = ORIGIN.y + ungroupedYOffset + row * ROW_STEP
-		}
+		if (groupName) record.parentId = frameIdByName.get(groupName)!
+		const pos = layout.nodes.get(c.name)!
+		record.x = pos.x
+		record.y = pos.y
 		store.put([record as never])
 		idByName.set(c.name, record.id)
 	}
@@ -180,7 +161,7 @@ export async function buildBoardFromModel(targetPath: string, model: BoardModel)
 				id: `shape:title-${model.documentId ?? 'board'}`,
 				typeName: 'shape',
 				type: 'text',
-				x: ORIGIN.x,
+				x: TITLE_X,
 				y: 20,
 				rotation: 0,
 				index: nextIndex(),

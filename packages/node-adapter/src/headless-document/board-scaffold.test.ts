@@ -87,22 +87,32 @@ describe('buildBoardFromModel', () => {
 		)
 	})
 
-	it('lays nodes out in kind rows: entry surfaces above gateways above libs above storage', async () => {
+	it('lays nodes out along the edge flow: callers above callees, no overlapping cards', async () => {
 		const file = await tempFile()
 		await buildBoardFromModel(file, model)
 
 		const doc = await readMywbDocument(file)
 		const nodes = doc.records
 			.filter((r) => r.typeName === 'shape')
-			.map((r) => JSON.parse(r.json) as { type: string; y: number; props: { kind?: string } })
+			.map((r) => JSON.parse(r.json) as { type: string; x: number; y: number; props: { name?: string } })
 			.filter((s) => s.type === 'service-node')
-		const yOf = (kind: string) => nodes.find((n) => n.props.kind === kind)!.y
-		expect(yOf('web')).toBeLessThan(yOf('api'))
-		expect(yOf('api')).toBeLessThan(yOf('lib'))
-		expect(yOf('lib')).toBeLessThan(yOf('db'))
-		expect(yOf('web')).toBe(yOf('tool'))
-		const sameRow = nodes.filter((n) => n.props.kind === 'lib')
-		expect(new Set(sameRow.map((n) => (n as unknown as { x: number }).x)).size).toBe(sameRow.length)
+		const yOf = (name: string) => nodes.find((n) => n.props.name === name)!.y
+		// Acyclic call chains flow strictly downward (dagre ranks by edges, not
+		// by kind): runtime → graphs → backends → tools, gateway → state.
+		expect(yOf('runtime')).toBeLessThan(yOf('graphs'))
+		expect(yOf('graphs')).toBeLessThan(yOf('backends'))
+		expect(yOf('backends')).toBeLessThan(yOf('tools'))
+		expect(yOf('gateway')).toBeLessThan(yOf('state'))
+		// No two cards overlap anywhere on the page.
+		for (let i = 0; i < nodes.length; i++) {
+			for (let j = i + 1; j < nodes.length; j++) {
+				const a = nodes[i]
+				const b = nodes[j]
+				const apart =
+					a.x + 220 <= b.x || b.x + 220 <= a.x || a.y + 96 <= b.y || b.y + 96 <= a.y
+				expect(apart, `${a.props.name} overlaps ${b.props.name}`).toBe(true)
+			}
+		}
 	})
 
 	it('rejects an edge whose endpoint names no component', async () => {
@@ -178,14 +188,65 @@ describe('buildBoardFromModel — groups (frames)', () => {
 		expect(nodeByName.get('loner')!.parentId.startsWith('page:')).toBe(true)
 
 		// Members use frame-relative coords (tldraw composes the frame transform
-		// onto children) and stack vertically — locking this guards against a
-		// silent shift to page-absolute that parentId checks wouldn't catch.
+		// onto children); every member must land inside its frame's box —
+		// this guards against a silent shift to page-absolute coords that
+		// parentId checks wouldn't catch.
+		const backendFrame = frameByName.get('backend')! as unknown as { props: { w: number; h: number } }
 		const backend = ['api', 'worker', 'db'].map((n) => nodeByName.get(n)! as unknown as { x: number; y: number })
-		for (const m of backend) expect(m.x).toBe(24) // FRAME_PAD
-		const ys = backend.map((m) => m.y).sort((a, b) => a - b)
-		expect(ys[0]).toBe(24) // first member at FRAME_PAD
-		expect(ys[1]).toBeGreaterThan(ys[0]) // stacked, not overlapping
-		expect(ys[2]).toBeGreaterThan(ys[1])
+		for (const m of backend) {
+			expect(m.x).toBeGreaterThanOrEqual(0)
+			expect(m.x + 220).toBeLessThanOrEqual(backendFrame.props.w)
+			expect(m.y).toBeGreaterThanOrEqual(0)
+			expect(m.y + 96).toBeLessThanOrEqual(backendFrame.props.h)
+		}
+	})
+
+	it('follows internal edges inside a frame and keeps ungrouped nodes clear of it', async () => {
+		const file = await tempFile()
+		await buildBoardFromModel(file, {
+			components: [
+				{ name: 'a', kind: 'lib' },
+				{ name: 'b', kind: 'lib' },
+				{ name: 'c', kind: 'lib' },
+				{ name: 'd', kind: 'lib' },
+				{ name: 'outsider', kind: 'web' }
+			],
+			// a → b → d and a → c: internal edges should drive member layout.
+			edges: [
+				{ from: 'a', to: 'b', relation: 'calls' },
+				{ from: 'a', to: 'c', relation: 'calls' },
+				{ from: 'b', to: 'd', relation: 'calls' },
+				{ from: 'outsider', to: 'a', relation: 'calls' }
+			],
+			groups: [{ name: 'core', members: ['a', 'b', 'c', 'd'] }]
+		})
+		const doc = await readMywbDocument(file)
+		const shapes = doc.records
+			.filter((r) => r.typeName === 'shape')
+			.map((r) => JSON.parse(r.json) as { id: string; type: string; x: number; y: number; parentId: string; props: Record<string, unknown> })
+		const frame = shapes.find((s) => s.type === 'frame')!
+		const members = shapes.filter((s) => s.type === 'service-node' && s.parentId === frame.id)
+		const memberByName = new Map(members.map((m) => [m.props.name as string, m]))
+		// The call chain flows downward inside the frame, and siblings on the
+		// same rank (b, c) sit side by side rather than stacked.
+		expect(memberByName.get('a')!.y).toBeLessThan(memberByName.get('b')!.y)
+		expect(memberByName.get('b')!.y).toBeLessThan(memberByName.get('d')!.y)
+		expect(memberByName.get('b')!.x).not.toBe(memberByName.get('c')!.x)
+		// Every member fits inside the frame's own box.
+		for (const m of members) {
+			expect(m.x).toBeGreaterThanOrEqual(0)
+			expect(m.x + 220).toBeLessThanOrEqual(frame.props.w as number)
+			expect(m.y + 96).toBeLessThanOrEqual(frame.props.h as number)
+		}
+		// The ungrouped caller must not overlap the frame in page space — the
+		// page-level pass treats the frame as one box and lays them apart.
+		const outsider = shapes.find((s) => s.type === 'service-node' && s.parentId.startsWith('page:'))!
+		const fw = frame.props.w as number
+		const fh = frame.props.h as number
+		const apart =
+			outsider.x + 220 <= frame.x || frame.x + fw <= outsider.x ||
+			outsider.y + 96 <= frame.y || frame.y + fh <= outsider.y
+		expect(apart).toBe(true)
 	})
 
 	it('rejects a group member that names no component', async () => {
@@ -211,6 +272,23 @@ describe('buildBoardFromModel — groups (frames)', () => {
 				]
 			})
 		).rejects.toThrow(/a.*two groups|two groups.*a|belongs to more than one/i)
+	})
+
+	it('rejects two groups sharing a name (would orphan a frame)', async () => {
+		const file = await tempFile()
+		await expect(
+			buildBoardFromModel(file, {
+				components: [
+					{ name: 'a', kind: 'lib' },
+					{ name: 'b', kind: 'lib' }
+				],
+				edges: [],
+				groups: [
+					{ name: 'dup', members: ['a'] },
+					{ name: 'dup', members: ['b'] }
+				]
+			})
+		).rejects.toThrow(/duplicate group name.*dup/)
 	})
 
 	it('rejects an empty group', async () => {
