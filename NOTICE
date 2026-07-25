@@ -1,0 +1,24 @@
+My Whiteboard
+Copyright 2026 Phuc Nguyen
+
+This product includes software developed as an open-source project by
+Phuc Nguyen and contributors, licensed under the Apache License, Version 2.0.
+
+--------------------------------------------------------------------------------
+Third-party components
+
+This project builds on the tldraw SDK (https://tldraw.dev), which is distributed
+under its own license, NOT under this project's Apache-2.0 license. The tldraw
+SDK is not open source in the full sense, and its licensing obligations fall on
+the party that runs it in production ("downstream"), not on this project.
+
+  - Running only on localhost (the desktop app, `mywb-app://`, or local Docker)
+    is treated as development by the SDK and needs no tldraw license key.
+  - Deploying to a server with a domain/HTTPS (including internal tools) is
+    commercial/production use and requires each operator to obtain their own
+    tldraw license (Hobby for non-commercial, commercial otherwise).
+
+This repository ships NO tldraw license key. Self-installers are responsible for
+supplying their own key when and if their deployment requires one. See
+docs/product-positioning-abstract.md ("Định vị phân phối & license tldraw") for
+the full rationale.

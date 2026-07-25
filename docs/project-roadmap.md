@@ -1,6 +1,10 @@
 # Project Roadmap
 
-**My Whiteboard** — cập nhật 2026-07-20. Định hướng dài hạn: **hybrid, tách core**
+> **Internal roadmap & stage log (Vietnamese).** Maintainer's staged history and
+> forward plan. For a user-facing summary of released changes, see the
+> [changelog](../CHANGELOG.md).
+
+**My Whiteboard** — cập nhật 2026-07-25. Định hướng dài hạn: **hybrid, tách core**
 (xem [product-positioning-abstract.md](product-positioning-abstract.md) và
 [system-architecture.md](system-architecture.md)).
 
@@ -143,13 +147,21 @@ document scripts trong webview, KHÔNG agent API mới. Marketplace publish =
 việc tay (cần publisher account).
 Plan: [plans/260720-1320-vscode-extension-mvp-edit-save/](../plans/260720-1320-vscode-extension-mvp-edit-save/plan.md).
 
-## Stage "Moat Proof" — diagram-as-review chạy thật 🔶 (in-flight 2026-07-20)
+## Stage "Moat Proof" — diagram-as-review chạy thật ✅ (done 2026-07-25)
 
-Phase 1 ✅ (CLI vendorable qua dynamic-import mcp + recipe vendor cả dist/);
-autonomous pre-work ✅ (drift-check run #1: 0 drift, 2 false-positive hụt →
-guard vào SKILL; 2 board draft headless; branch `feat/diagram-drift-check`
-sẵn trong my-db-mate + my-crew, chưa push). Chờ user: review board trong app,
-thêm secret `ANTHROPIC_API_KEY`, push PR → phase 5 đo metrics.
+Phase 1 ✅ (CLI vendorable); pre-work ✅ (drift-check run #1, guard
+false-positive vào SKILL). 24-25/07 đóng stage bằng 2 kênh:
+- **Kênh CI**: 2 PR thật mở trên my-db-mate (#1) + my-crew (#3), board có
+  frame + dagre layout, drift job pass, skip-graceful verified khi thiếu key.
+- **Kênh local (chốt là kênh CHÍNH, xem positioning)**: agent local chạy
+  drift-check scope full trên cả 2 repo, **bắt 2 drift thật** — my-db-mate:
+  cạnh "Providers reads App DB" sai (providers nối DB ngoài, config do
+  connection-service đọc); my-crew: cạnh "Agent Graphs calls Backends" ngược
+  chiều (backends import agent, không có chiều ngược). Mắt người duyệt board
+  không thấy 2 lỗi này. Zero-setup, không cần secret.
+
+Phase 5 (đo metrics qua CI) hạ xuống opt-in — kênh CI là tính năng phụ, user
+nào dùng tự cắm `ANTHROPIC_API_KEY`, không cần test thêm.
 Plan: [plans/260720-0438-moat-proof-diagram-as-review-ci/](../plans/260720-0438-moat-proof-diagram-as-review-ci/plan.md).
 
 ## Stage 2c — Exec-remote + script sandbox trên web (ứng viên, demote 2026-07-19)

@@ -4,6 +4,16 @@
 	"description": "Local-first whiteboard for engineers where coding agents are first-class users",
 	"type": "module",
 	"private": true,
+	"license": "Apache-2.0",
+	"author": "Phuc Nguyen",
+	"homepage": "https://github.com/phuc-nt/my-whiteboard#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/phuc-nt/my-whiteboard.git"
+	},
+	"bugs": {
+		"url": "https://github.com/phuc-nt/my-whiteboard/issues"
+	},
 	"workspaces": [
 		"packages/*",
 		"apps/*",

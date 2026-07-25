@@ -8,7 +8,29 @@ Claude Code / Codex / Cursor / Gemini read and edit the canvas through a local A
 — by structured data and code, not screenshots.
 
 Desktop app (Electron), single-user, no server. Documents are portable `.mywb`
-files. See [docs/product-positioning-abstract.md](docs/product-positioning-abstract.md).
+files.
+
+> **Status:** pre-1.0 (v0.1.0). Local-first desktop MVP is shipped; the web app
+> and VS Code extension are functional. See the [changelog](CHANGELOG.md) and
+> the [roadmap](docs/project-roadmap.md).
+
+## Install
+
+There are no pre-built binaries published yet — build from source (below). The
+macOS and Linux desktop builds are produced by CI; a signed/released download is
+planned (see the roadmap).
+
+```bash
+git clone https://github.com/phuc-nt/my-whiteboard.git
+cd my-whiteboard
+npm install
+npm run dev         # launch the desktop app
+
+npm run build:mac   # or: build an unsigned macOS DMG   → apps/desktop/release/
+npm run build:linux # or: build a Linux AppImage + deb   → apps/desktop/release/
+```
+
+Requires **Node.js ≥ 22.12**. New contributors: see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Develop
 
@@ -107,4 +129,17 @@ shared core): [docs/project-roadmap.md](docs/project-roadmap.md).
 The agent API and document scripts execute code by design (see the CSP note in
 `src/renderer/index.html`). The boundaries are: the server binds loopback only
 with a per-launch token, and embedded scripts run only after digest consent.
-Only grant agent access and open `.mywb` files you trust.
+Only grant agent access and open `.mywb` files you trust. Full details and the
+private disclosure process are in [SECURITY.md](SECURITY.md).
+
+## License
+
+Licensed under the [Apache License 2.0](LICENSE).
+
+This project embeds the [tldraw SDK](https://tldraw.dev), which carries its own
+license separate from this project's. Running only on localhost needs no tldraw
+license key; deploying to a server with a domain is production use and requires
+the operator to obtain their own key. This repository ships no key. See
+[NOTICE](NOTICE) for the summary and
+[docs/product-positioning-abstract.md](docs/product-positioning-abstract.md)
+for the full rationale.
