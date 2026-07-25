@@ -41,6 +41,12 @@
       "kind": "api",
       "repoUrl": "services/agent-relay",
       "ownerTeam": "solo"
+    },
+    {
+      "name": "VS Code extension",
+      "kind": "app",
+      "repoUrl": "apps/vscode",
+      "ownerTeam": "solo"
     }
   ],
   "edges": [
@@ -92,6 +98,16 @@
     {
       "from": "agent-relay",
       "to": "@mywb/core",
+      "relation": "imports"
+    },
+    {
+      "from": "VS Code extension",
+      "to": "@mywb/core",
+      "relation": "imports"
+    },
+    {
+      "from": "VS Code extension",
+      "to": "@mywb/web-adapter",
       "relation": "imports"
     }
   ],
