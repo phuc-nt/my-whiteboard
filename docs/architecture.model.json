@@ -1,0 +1,99 @@
+{
+  "components": [
+    {
+      "name": "@mywb/core",
+      "kind": "lib",
+      "repoUrl": "packages/core",
+      "ownerTeam": "solo"
+    },
+    {
+      "name": "@mywb/node-adapter",
+      "kind": "lib",
+      "repoUrl": "packages/node-adapter",
+      "ownerTeam": "solo"
+    },
+    {
+      "name": "@mywb/web-adapter",
+      "kind": "lib",
+      "repoUrl": "packages/web-adapter",
+      "ownerTeam": "solo"
+    },
+    {
+      "name": "desktop app (Electron)",
+      "kind": "app",
+      "repoUrl": "apps/desktop",
+      "ownerTeam": "solo"
+    },
+    {
+      "name": "mywb CLI",
+      "kind": "tool",
+      "repoUrl": "apps/cli",
+      "ownerTeam": "solo"
+    },
+    {
+      "name": "web app",
+      "kind": "app",
+      "repoUrl": "apps/web",
+      "ownerTeam": "solo"
+    },
+    {
+      "name": "agent-relay",
+      "kind": "api",
+      "repoUrl": "services/agent-relay",
+      "ownerTeam": "solo"
+    }
+  ],
+  "edges": [
+    {
+      "from": "@mywb/node-adapter",
+      "to": "@mywb/core",
+      "relation": "imports"
+    },
+    {
+      "from": "@mywb/web-adapter",
+      "to": "@mywb/core",
+      "relation": "imports"
+    },
+    {
+      "from": "desktop app (Electron)",
+      "to": "@mywb/core",
+      "relation": "imports"
+    },
+    {
+      "from": "desktop app (Electron)",
+      "to": "@mywb/node-adapter",
+      "relation": "imports"
+    },
+    {
+      "from": "mywb CLI",
+      "to": "@mywb/core",
+      "relation": "imports"
+    },
+    {
+      "from": "mywb CLI",
+      "to": "@mywb/node-adapter",
+      "relation": "imports"
+    },
+    {
+      "from": "web app",
+      "to": "@mywb/core",
+      "relation": "imports"
+    },
+    {
+      "from": "web app",
+      "to": "@mywb/web-adapter",
+      "relation": "imports"
+    },
+    {
+      "from": "web app",
+      "to": "agent-relay",
+      "relation": "connects over websocket"
+    },
+    {
+      "from": "agent-relay",
+      "to": "@mywb/core",
+      "relation": "imports"
+    }
+  ],
+  "documentId": "35dabd5a-7f5b-40b7-a4de-90ac174a1466"
+}

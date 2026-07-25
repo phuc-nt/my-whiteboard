@@ -23,8 +23,10 @@ headless through the `mywb file` CLI.
 
 - [CI drift-check example](examples/ci-drift-check/README.md): keep a `.mywb`
   architecture diagram honest against the code on every PR
-- [Drift-check agent skill](examples/ci-drift-check/SKILL.md): shape
-  semantics, drift procedure, scaffold/update patterns
+- [Drift-check agent skill](examples/ci-drift-check/SKILL.md): reads the
+  committed `*.model.json` when one sits next to the board (falling back to
+  full board JSON when it does not), verifies model↔board mechanically as a
+  `board-sync` claim, then checks each claim against the code
 - Runtime: a running app serves `GET /llms.txt` and `GET /readme` on its
   localhost agent API (port and bearer token in `server.json`)
 - Mermaid bridge: `mywb file mermaid <board>` exports a board as Mermaid

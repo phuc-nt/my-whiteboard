@@ -34,11 +34,39 @@ node apps/cli/dist/cli.js file scaffold model.json docs/architecture.mywb
 #   "groups": [{ "name": "backend", "members": ["api", "db"] }, ...] }
 ```
 
-Nodes are laid out by kind (entry surfaces → api → libs → storage); arrows are
-bound to both endpoints and carry `meta.relation`. Optional `groups` wrap their
-members in a named subsystem frame (each component in at most one group) — the
-Mermaid export turns each frame into a `subgraph`. Open the result in the app
-to fine-tune, then commit.
+Nodes are laid out by a graph engine (dagre: entry surfaces left, storage
+right); arrows are bound to both endpoints and carry `meta.relation`. Optional
+`groups` wrap their members in a named subsystem frame (each component in at
+most one group) — the Mermaid export turns each frame into a `subgraph`. Open the
+result in the app to fine-tune, then commit.
+
+**Commit the model too**, next to the board with the same basename
+(`docs/architecture.model.json` beside `docs/architecture.mywb`). It is the
+diffable half of the pair — a reviewer reads the model in a PR, not a binary zip
+— and the drift-check skill reads it instead of full board JSON, which is
+cheaper and gives it fewer chances to misread the diagram.
+
+## Keeping the pair in sync
+
+The model and the board are two views of the same architecture, and either side
+can move:
+
+```bash
+# model changed (a component added, an edge rewired) → re-render the board
+node apps/cli/dist/cli.js file scaffold docs/architecture.model.json docs/architecture.mywb --update
+
+# board changed (someone rearranged it in the app) → read the model back out
+node apps/cli/dist/cli.js file model extract docs/architecture.mywb docs/architecture.model.json
+```
+
+`--update` merges instead of overwriting: components keep the position and size
+a human gave them, notes and hand-drawn shapes survive, and re-running it with
+an unchanged model changes nothing. Plain `file scaffold` on an existing board
+overwrites it — use `--update` on any board a human has opened.
+
+The skill reports the sync state of the pair as its own `board-sync` claim, so a
+model committed without re-rendering the board shows up in CI instead of rotting
+quietly.
 
 ## Try it locally
 

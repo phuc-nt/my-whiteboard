@@ -99,23 +99,23 @@ Regenerate with `node apps/cli/dist/cli.js file mermaid docs/architecture.mywb`:
 
 ```mermaid
 flowchart LR
-  n_gshSfADYbwuV43HfoIkE_["@mywb/core"]:::lib
-  n_HYYrEv0N1RyhSEzD2iBc7["@mywb/node-adapter"]:::lib
-  n_K0LvY1S5PAPk8c6cY62wT["@mywb/web-adapter"]:::lib
-  n_CYwKjYp8h_rvK2daos3Qw["desktop app (Electron)"]:::app
-  n_WKtQzRFEPmPgXuLWXEj99["mywb CLI"]:::tool
-  n_lU3_sF9HV5Km1zDA70icx["web app"]:::app
-  n_CFiQJ6xuzDWYjcsSuBR6a["agent-relay"]:::api
-  n_HYYrEv0N1RyhSEzD2iBc7 --> n_gshSfADYbwuV43HfoIkE_
-  n_K0LvY1S5PAPk8c6cY62wT --> n_gshSfADYbwuV43HfoIkE_
-  n_CYwKjYp8h_rvK2daos3Qw --> n_gshSfADYbwuV43HfoIkE_
-  n_CYwKjYp8h_rvK2daos3Qw --> n_HYYrEv0N1RyhSEzD2iBc7
-  n_WKtQzRFEPmPgXuLWXEj99 --> n_gshSfADYbwuV43HfoIkE_
-  n_WKtQzRFEPmPgXuLWXEj99 --> n_HYYrEv0N1RyhSEzD2iBc7
-  n_lU3_sF9HV5Km1zDA70icx --> n_gshSfADYbwuV43HfoIkE_
-  n_lU3_sF9HV5Km1zDA70icx --> n_K0LvY1S5PAPk8c6cY62wT
-  n_lU3_sF9HV5Km1zDA70icx --> n_CFiQJ6xuzDWYjcsSuBR6a
-  n_CFiQJ6xuzDWYjcsSuBR6a --> n_gshSfADYbwuV43HfoIkE_
+  n_mywb_core["@mywb/core"]:::lib
+  n_mywb_node_adapter["@mywb/node-adapter"]:::lib
+  n_mywb_web_adapter["@mywb/web-adapter"]:::lib
+  n_desktop_app__Electron["desktop app (Electron)"]:::app
+  n_mywb_CLI["mywb CLI"]:::tool
+  n_web_app["web app"]:::app
+  n_agent_relay["agent-relay"]:::api
+  n_mywb_node_adapter -->|"imports"| n_mywb_core
+  n_mywb_web_adapter -->|"imports"| n_mywb_core
+  n_desktop_app__Electron -->|"imports"| n_mywb_core
+  n_desktop_app__Electron -->|"imports"| n_mywb_node_adapter
+  n_mywb_CLI -->|"imports"| n_mywb_core
+  n_mywb_CLI -->|"imports"| n_mywb_node_adapter
+  n_web_app -->|"imports"| n_mywb_core
+  n_web_app -->|"imports"| n_mywb_web_adapter
+  n_web_app -->|"connects over websocket"| n_agent_relay
+  n_agent_relay -->|"imports"| n_mywb_core
   %% code-ref: packages/core/src/shapes/service-node/service-node-shape-util.tsx:8-8
   %% code-ref: apps/cli/src/cli-main.ts:15-38
   classDef api fill:#dbeafe,stroke:#1d4ed8
