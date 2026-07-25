@@ -129,25 +129,66 @@ Decide which claims to actually evaluate before reading any code:
    Then apply scoping (step 0). The `board-sync` claim is never out of scope —
    it is cheap and it is what tells you the rest of the data is current.
 2. For each in-scope claim, look for evidence in the repository
-   (Grep/Glob/Read): service names in code/config/deploy files, `repoUrl`
+   (Grep/Glob/Read). **Never conclude "no evidence" from a single failed
+   search.** A search that errors and a search that finds nothing look almost
+   identical, and the difference decides between `ok` and a false `drifted`:
+   - Quote glob arguments: `grep -r --include='*.ts'`, not `--include=*.ts`.
+     Unquoted, zsh expands it against the current directory, fails with
+     `no matches found`, and pipes nothing into `wc -l` — a `0` that reads
+     exactly like "this dependency does not exist".
+   - Check exit status, or use the Grep tool instead of shell `grep`, when a
+     count of `0` is about to become a `drifted` verdict.
+   - Confirm a negative from a second angle before reporting it: the manifest
+     (`package.json`, `pyproject.toml`, `go.mod`) *and* an import search.
+   Evidence to look for: service names in code/config/deploy files, `repoUrl`
    paths existing, `code-ref` files and line ranges (content moved
    substantially since `sha` counts as drift), called services actually
-   referenced. For a `frame` claim (a `group` on the model-first path — same
+   referenced. A `repoUrl` naming a path that is generated or gitignored (a
+   runtime data directory, a build output) is **not** drift just because a fresh
+   checkout has not created it — verify it against the config default that
+   declares it and say where in `note`. Otherwise the claim would flip to
+   `drifted` in CI and back to `ok` on a developer machine, which measures the
+   checkout, not the architecture. For a `frame` claim (a `group` on the model-first path — same
    semantics, `members` are component names), check that its members' `repoUrl` paths
    share a subsystem — i.e. sit under a common directory root. Members
    scattered under a shared root are `ok`; one member whose `repoUrl` sits in
    a clearly unrelated tree is `drifted` (it likely belongs to another
    subsystem); a member with no `repoUrl` is `unverifiable`. A subsystem may
    legitimately span a few directories, so only flag a member that is *clearly*
-   an outlier — when unsure, `unverifiable`.
+   an outlier — when unsure, `unverifiable`. A group that shares its name with
+   one of its own members is redundant modelling, not drift: the code cannot
+   contradict it, so judge it on member cohesion like any other and say so in
+   `note`.
 3. Classify each claim: `ok`, `drifted` (evidence contradicts), or
    `unverifiable` (no evidence either way — say so, do not guess).
    Also check the reverse direction — dependencies in the code that the
-   diagram omits — but before flagging a missing edge, verify it is a
-   *runtime* dependency: `devDependencies` and imports that appear only in
-   tests/e2e are not architecture edges and must not be reported as drift.
+   diagram omits. Two filters, in order, so the check lands the same way twice:
+
+   **(a) Is it a runtime dependency at all?** Not an architecture edge, never
+   drift: dev-only manifest entries (`devDependencies` and their equivalent in
+   other ecosystems), anything imported only from tests/e2e/fixtures, type-only
+   imports (`import type`, `if TYPE_CHECKING:`), and names that appear only in
+   comments, docstrings or strings. Grep matches the last two, so read every hit
+   before counting it — a docstring naming a module sits right next to the real
+   import of it.
+
+   **(b) Is it structural?** A runtime dependency is only an architecture edge
+   when it is load-bearing. Report as `drifted` when it is imported at module
+   top level, or from several call sites, or on a request/job path — the shape
+   of the system changes if you delete it. Record as `unverifiable`, with the
+   evidence, when it rests on a single lazy call site inside one function: that
+   reads as helper reuse or a layering smell, and whether it belongs on the
+   diagram is a modelling judgement the code cannot settle. Do not guess —
+   the same rule as the group check: when unsure, `unverifiable`.
+
+   A dependency mediated by a loader or registry (A resolves B through a plugin
+   registry rather than importing it) still counts: the seam is the intended
+   mechanism, not an absence. Say so in `note`.
+
    Report an omitted runtime edge as an extra claim with a fresh id
-   (`"missing-edge-<from>-<to>"`).
+   (`"missing-edge:<from>-><to>"`). Use the same `-> ` separator as the `edge:`
+   ids: component names contain hyphens and spaces, so `missing-edge-a-b` cannot
+   be split back into its two endpoints.
 4. Write the result as `findings.json` (contract below). Do NOT post
    comments or talk to any API — rendering and publishing are the
    workflow's job, not yours. No findings → all claims `ok`; do not invent
@@ -187,7 +228,9 @@ this JSON (no prose, no markdown fences):
 Rules: `type` ∈ service-node | edge | code-ref | frame | mermaid | board-sync;
 `status` ∈ ok | drifted | unverifiable | skipped-out-of-scope; `summary` counts
 MUST match the `claims` array; `evidence` is repo-relative paths (`path` or
-`path:line`); `run.scope` is `diff` or `full`. On the model-first path add
+`path:line`); `run.scope` is `diff` or `full`, and `run.base` is the base ref on
+a `diff` run or `null` on a `full` one — always present, so a consumer can read
+it without checking for the key. On the model-first path add
 `"model": "<path to the .model.json>"` next to `"board"`, and use the
 `component:` / `edge:` / `group:` id form; on the fallback path omit `model` and
 use shape ids. Include at most one `board-sync` claim, only on the model-first
