@@ -26,7 +26,7 @@ Onboarding a repo no longer needs a drawing session. Describe the architecture
 as JSON and scaffold the board headlessly:
 
 ```bash
-node apps/cli/dist/cli.js file scaffold model.json docs/architecture.mywb
+npx -y mywb file scaffold model.json docs/architecture.mywb
 # model.json:
 # { "title": "my-app — architecture", "documentId": "my-app-architecture",
 #   "components": [{ "name": "web ui", "kind": "web", "repoUrl": "src/app" }, ...],
@@ -53,10 +53,10 @@ can move:
 
 ```bash
 # model changed (a component added, an edge rewired) → re-render the board
-node apps/cli/dist/cli.js file scaffold docs/architecture.model.json docs/architecture.mywb --update
+npx -y mywb file scaffold docs/architecture.model.json docs/architecture.mywb --update
 
 # board changed (someone rearranged it in the app) → read the model back out
-node apps/cli/dist/cli.js file model extract docs/architecture.mywb docs/architecture.model.json
+npx -y mywb file model extract docs/architecture.mywb docs/architecture.model.json
 ```
 
 `--update` merges instead of overwriting: components keep the position and size
@@ -70,20 +70,30 @@ quietly.
 
 ## Try it locally
 
+Nothing to clone — scaffold a board from a two-component model and read it back:
+
 ```bash
-npm ci
-npm run build -w apps/cli
-node apps/cli/dist/make-fixture.js /tmp/architecture.mywb examples/ci-drift-check/sample-board.json
-node apps/cli/dist/cli.js file read /tmp/architecture.mywb --json > diagram.json
+cat > /tmp/model.json <<'EOF'
+{ "title": "demo — architecture", "documentId": "demo-architecture",
+  "components": [{ "name": "web ui", "kind": "web" }, { "name": "api", "kind": "api" }],
+  "edges": [{ "from": "web ui", "to": "api", "relation": "calls" }] }
+EOF
+npx -y mywb file scaffold /tmp/model.json /tmp/architecture.mywb
+npx -y mywb file read /tmp/architecture.mywb --json > diagram.json
 # hand diagram.json + SKILL.md to your agent, or eyeball it:
-node apps/cli/dist/cli.js file read /tmp/architecture.mywb
+npx -y mywb file read /tmp/architecture.mywb
 ```
+
+`examples/ci-drift-check/sample-board.json` seeds a richer demo board (with
+deliberate drift bait) through `node apps/cli/dist/make-fixture.js` from a
+my-whiteboard checkout — it is a fixture builder, not a published command.
 
 ## Vendoring the CLI into your repo
 
-my-whiteboard is not published to npm, so a target repo ships the built CLI
-itself. The bundle is a directory, not a single file — `cli.js` loads sibling
-chunks from `assets/`. Copy the whole `dist/`:
+Not needed in most cases: point the workflow at `npx -y mywb`, which pins a
+version in your lockfile like any other dependency. Vendor only when CI has no
+npm registry access. The bundle is a directory, not a single file — `cli.js`
+loads sibling chunks from `assets/` — so copy the whole `dist/`:
 
 ```bash
 # from a my-whiteboard checkout, after `npm ci && npm run build -w apps/cli`
@@ -92,12 +102,11 @@ cp -R apps/cli/dist <target-repo>/tools/mywb/dist
 cp examples/ci-drift-check/SKILL.md <target-repo>/tools/mywb/drift-skill.md
 ```
 
-No `npm install` needed in the target repo: `file read`/`file apply` are
+A vendored copy needs no `npm install`: `file read`/`file apply` are
 self-contained (the MCP SDK is loaded lazily and only the `mcp` subcommand
 touches it). Point the workflow at `node tools/mywb/dist/cli.js`. The `mcp`
-subcommand is the exception — it still needs the SDK from `node_modules` (i.e.
-the monorepo), so it is not available from a vendored copy; drift-check only
-uses `file read`/`file apply`.
+subcommand is the exception — it needs the SDK from `node_modules`, so it is not
+available from a vendored copy; drift-check only uses `file read`/`file apply`.
 
 ## Requirements & limits
 

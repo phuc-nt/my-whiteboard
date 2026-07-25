@@ -56,7 +56,8 @@ services/agent-relay/        # my-whiteboard-agent-relay — read-only Agent Gat
                              #   connects out over WebSocket + token; agents POST /api/read (list/
                              #   getShapes/getBindings). NO exec route by design (that is Stage 2c)
 
-apps/cli/                    # my-whiteboard-cli — bin `mywb` (self-contained dist via vite SSR)
+apps/cli/                    # published to npm as `mywb` — bin `mywb` (self-contained dist via
+                             #   vite SSR; only @modelcontextprotocol/sdk stays a runtime dep)
                              #   file mode (headless): `mywb file read|apply|mermaid ...`
                              #     `file scaffold <model> <board> [--update]` renders a model onto a
                              #     board (--update merges, keeping human layout/notes);

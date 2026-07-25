@@ -12,10 +12,11 @@ the same architecture claims as a few dozen lines of JSON instead of a few
 thousand records, so read it when it exists.
 
 ```bash
-# A function, not a variable: `MYWB="node …/cli.js"` then `$MYWB` fails in zsh,
+# A function, not a variable: `MYWB="npx -y mywb"` then `$MYWB` fails in zsh,
 # which treats the whole string as one command name instead of splitting it.
-# monorepo path below; a repo vendoring the built dist uses tools/mywb/dist/cli.js
-mywb() { node apps/cli/dist/cli.js "$@"; }
+# Inside the my-whiteboard monorepo use `node apps/cli/dist/cli.js` instead, and
+# a repo vendoring the built dist uses `node tools/mywb/dist/cli.js`.
+mywb() { npx -y mywb "$@"; }
 BOARD=docs/architecture.mywb
 MODEL="${BOARD%.mywb}.model.json"
 
@@ -292,7 +293,7 @@ it, then:
 
 ```bash
 # monorepo: node apps/cli/dist/cli.js  ·  vendored: node tools/mywb/dist/cli.js
-node <cli.js> file apply <board.mywb> changes.json
+mywb file apply <board.mywb> changes.json
 # changes.json: { "put": [<full merged record>], "removed": [] }
 ```
 
