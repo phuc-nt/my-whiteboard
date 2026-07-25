@@ -1,5 +1,11 @@
 # My Whiteboard — Định vị sản phẩm (Abstract)
 
+> **Internal design & decision log (Vietnamese).** This is the maintainer's
+> product-positioning and decision record, kept in Vietnamese. For an English
+> overview of what the project is and how to use it, start from the
+> [README](../README.md); for architecture, see
+> [system-architecture.md](system-architecture.md).
+
 **Tên:** My Whiteboard (`my-whiteboard`)
 **Ngày:** 2026-07-19
 **Trạng thái:** Chốt — MVP local-first đã ship (Stage 0); định hướng dài hạn "hybrid, tách core" áp dụng từ Stage 1 (xem [project-roadmap.md](project-roadmap.md))
@@ -31,7 +37,7 @@ Engineer và team phát triển phần mềm trong công ty, đặc biệt nơi 
 
 - Agent thao tác canvas **rẻ hơn và tin cậy hơn hàng chục lần** so với computer-use trên Miro.
 - Tài liệu whiteboard là **mini-app tự chứa** (canvas + data + code) — dạng "malleable software" mà agent mở rộng được.
-- Về sau: diagram-as-review — CI so diagram với codebase thật, cảnh báo lệch (diagram không bao giờ chết mốc).
+- Diagram-as-review — agent so diagram với codebase thật, cảnh báo lệch (diagram không bao giờ chết mốc). Đã chứng minh vận hành 2026-07-25 (xem "Hai kênh drift-check" bên dưới).
 
 ## Phạm vi MVP (quyết định đã chốt)
 
@@ -76,6 +82,24 @@ Hệ quả cho roadmap: nợ "xác nhận license" của Stage 0 đóng bằng q
 định vị này — không cần mua license để phát triển và phát hành OSS. Re-verify
 với terms chính thức của tldraw khi (a) nâng major version SDK, hoặc (b) có
 kênh phân phối ngoài mô hình self-install (vd hosted web app).
+
+## Hai kênh drift-check (chốt 2026-07-25): local là kênh chính
+
+Diagram-as-review có 2 kênh chạy; drift-skill là instruction thuần cho agent
+đọc nên agent nào cũng chạy được:
+
+- **Kênh local (CHÍNH)** — agent sẵn có của engineer (Claude Code, Cursor,
+  Codex) đọc drift-skill, truy data qua `mywb file read --json`, tự đối chiếu
+  code và trả findings. **Zero-setup**: không secret, không CI, token tính vào
+  subscription agent user đã trả. Khớp định vị OSS self-install và "agent là
+  first-class user". Bằng chứng: 2026-07-25 agent local chạy scope full trên
+  2 repo thật, bắt 2 drift thật (1 cạnh sai hướng dữ liệu, 1 cạnh ngược chiều
+  gọi) mà mắt người đã duyệt board không thấy.
+- **Kênh CI (PHỤ, opt-in)** — `diagram-drift-check.yml` + repo secret
+  `ANTHROPIC_API_KEY`, tự chạy mỗi PR, comment findings. Cho team muốn gác
+  cổng tự động không phụ thuộc ai nhớ chạy. Thiếu key thì degrade sạch
+  (export vẫn chạy, agent step skip — verified trên PR thật). Kênh này
+  không cần test thêm; ai dùng tự cắm key của họ.
 
 ## Ràng buộc
 
