@@ -75,7 +75,9 @@ I hit this trap myself, twice. Once on `apps/vscode` with an unquoted `--include
 
 **I built my own false alarm.** My overlap check on the updated my-db-mate board reported three colliding pairs. Cause: nodes inside a frame use frame-relative coordinates while nodes on the page use absolute ones, and I was comparing across the two systems. My *before* check had filtered on `parentId`; my *after* check dropped that filter. Same class of error as the grep trap — a check that looks like it found something when it is actually broken.
 
-**The SVG was stale and the test suite was fine with it.** `apps/desktop/e2e/generate-architecture-svg.spec.ts` only writes `docs/architecture.svg` under `MYWB_WRITE_SVG=1`, and asserts only that service-node *names* appear. So `npm run e2e` went 30/30 green against a stale file. **Arrow relation labels are protected by no test at all** — worth fixing.
+**The SVG was stale and the test suite was fine with it.** `apps/desktop/e2e/generate-architecture-svg.spec.ts` only writes `docs/architecture.svg` under `MYWB_WRITE_SVG=1`, and asserted only that service-node *names* appear — in the string it had **just exported**. The tracked file was never read, so it could drift arbitrarily while `npm run e2e` went 30/30 green. It did.
+
+Fixed the same day (`ae6400f`): the spec now compares name and label tallies between the fresh export and the committed file, catching both a component added and never re-exported and one deleted whose card is still drawn. Arrow labels also had zero coverage anywhere — `props.richText` (what a human reads) and `meta.relation` (what an agent reads) come from the same model edge, so the scaffold test now asserts they agree, matching a check `--update` already had. Each of the three gates was verified by breaking it first.
 
 **Note validator quirk**: `props.textLastEditedBy` must be present as `null`, not omitted. `file apply` rejected the dogfood sticky note until I set it. The validator catching this is the intended behavior — that is the whole point of routing updates through `applyRecordChanges`.
 
@@ -100,7 +102,7 @@ I hit this trap myself, twice. Once on `apps/vscode` with an unquoted `--include
 3. ✅ Docs: `system-architecture.md` (round-trip section + ownership contract), `codebase-summary.md`, `project-roadmap.md` stage entry.
 4. ⏳ Push `feat/model-board-roundtrip` (9 commits, working tree clean).
 5. 📋 External repos: model fixes sit on local `feat/architecture-model` branches (my-db-mate `3f9bc4d`, my-crew `01373ab`). Landing them is each repo owner's call (user decision).
-6. 📋 Backlog: arrow relation labels have no test coverage — the SVG spec asserts node names only, and only writes under `MYWB_WRITE_SVG=1`.
+6. ✅ Closed same day: the committed SVG and the arrow labels both have gates now (`ae6400f`) — see "What Went Sideways".
 
 ## Unresolved
 
