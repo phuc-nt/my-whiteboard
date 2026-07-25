@@ -72,6 +72,12 @@ npm run build:mac  # unsigned universal macOS DMG → apps/desktop/release/
   `claude mcp add mywb -- node apps/cli/dist/cli.js mcp`.
 - **Custom shapes** — `service-node`, `code-ref`, `mermaid-block` carry
   structured, agent-readable data for architecture and code-reference diagrams.
+- **Model ⇄ board round-trip** — a board's architecture is also a small JSON
+  model you can commit and review: `mywb file model extract <board>
+  <board>.model.json` reads it out, and `mywb file scaffold <model> <board>
+  --update` merges an edited model back in. The update keeps the layout, sizes
+  and sticky notes a human added, so the model stays a living source of truth
+  instead of a one-shot generator input.
 - **VS Code extension** — open and edit `.mywb` boards on a full canvas inside
   VS Code ([apps/vscode](apps/vscode/README.md); build the `.vsix` with
   `npm run package:vsix -w apps/vscode`).

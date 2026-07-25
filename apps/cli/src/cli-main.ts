@@ -19,10 +19,13 @@ const USAGE = `Usage:
   mywb file apply <path.mywb> <changes.json>
                                         Apply {"put":[record...],"removed":[id...]} record-level
                                         changes, validated against the app's shape schemas
-  mywb file scaffold <model.json> <path.mywb>
+  mywb file scaffold <model.json> <path.mywb> [--update]
                                         Build an architecture board from a model:
                                         {"title"?,"documentId"?,"components":[{name,kind,...}],
                                         "edges":[{from,to,relation}]}
+                                        --update merges into the existing board instead of
+                                        rebuilding it: nodes keep the position and size you
+                                        gave them, notes and hand-drawn shapes are untouched
   mywb file model extract <path.mywb> <model.json|->
                                         Read the board back into its model JSON (the reverse of
                                         scaffold). \`-\` prints to stdout. Commit the model next
@@ -62,7 +65,8 @@ async function main(): Promise<void> {
 			json: { type: 'boolean', default: false },
 			help: { type: 'boolean', default: false },
 			'server-json': { type: 'string' },
-			syntax: { type: 'string', default: 'flowchart' }
+			syntax: { type: 'string', default: 'flowchart' },
+			update: { type: 'boolean', default: false }
 		},
 		allowPositionals: true
 	})
@@ -91,7 +95,7 @@ async function main(): Promise<void> {
 			return
 		}
 		if (command === 'scaffold' && rest.length === 2) {
-			await runFileScaffold(rest[0], rest[1])
+			await runFileScaffold(rest[0], rest[1], { update: values.update })
 			return
 		}
 		if (command === 'model' && rest[0] === 'extract' && rest.length === 3) {

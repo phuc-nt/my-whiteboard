@@ -166,6 +166,68 @@ describe('mywb file scaffold', () => {
 		)) as { code: number }
 		expect(error.code).toBe(2)
 	})
+
+	it('--update merges a changed model, keeping a moved node where the human put it', async () => {
+		const dir = await tempDir()
+		const modelPath = join(dir, 'model.json')
+		const board = join(dir, 'board.mywb')
+		await writeFile(modelPath, JSON.stringify(model))
+		await run(process.execPath, [CLI, 'file', 'scaffold', modelPath, board])
+
+		// Simulate a human dragging the ui card, through the same public path an
+		// agent would use: a record-level apply.
+		const before = JSON.parse(
+			(await run(process.execPath, [CLI, 'file', 'read', board, '--json'])).stdout
+		) as { records: Array<{ id: string; typeName: string; record: Record<string, unknown> }> }
+		const ui = before.records.find(
+			(r) => r.typeName === 'shape' && (r.record.props as { name?: string })?.name === 'ui'
+		)!
+		const changesPath = join(dir, 'changes.json')
+		await writeFile(changesPath, JSON.stringify({ put: [{ ...ui.record, x: 1500, y: 900 }], removed: [] }))
+		await run(process.execPath, [CLI, 'file', 'apply', board, changesPath])
+
+		// The model gains a component and an edge.
+		await writeFile(
+			modelPath,
+			JSON.stringify({
+				...model,
+				components: [...model.components, { name: 'cli', kind: 'tool' }],
+				edges: [...model.edges, { from: 'cli', to: 'api', relation: 'calls' }]
+			})
+		)
+		const { stdout } = await run(process.execPath, [CLI, 'file', 'scaffold', modelPath, board, '--update'])
+		expect(JSON.parse(stdout).updated.put).toBeGreaterThan(0)
+
+		const after = JSON.parse(
+			(await run(process.execPath, [CLI, 'file', 'read', board, '--json'])).stdout
+		) as { records: Array<{ typeName: string; record: Record<string, unknown> }> }
+		const shapes = after.records.filter((r) => r.typeName === 'shape').map((r) => r.record)
+		const nodes = shapes.filter((s) => s.type === 'service-node')
+		expect(nodes.map((n) => (n.props as { name: string }).name).sort()).toEqual(['api', 'cli', 'store', 'ui'])
+		expect(shapes.filter((s) => s.type === 'arrow')).toHaveLength(3)
+		const movedUi = nodes.find((n) => (n.props as { name: string }).name === 'ui')!
+		expect([movedUi.x, movedUi.y]).toEqual([1500, 900])
+	})
+
+	it('--update on a missing board fails as an operation error, not a silent rebuild', async () => {
+		const dir = await tempDir()
+		const modelPath = join(dir, 'model.json')
+		await writeFile(modelPath, JSON.stringify(model))
+		const error = (await run(process.execPath, [
+			CLI,
+			'file',
+			'scaffold',
+			modelPath,
+			join(dir, 'nope.mywb'),
+			'--update'
+		]).then(
+			() => {
+				throw new Error('expected update to fail')
+			},
+			(e: { code: number }) => e
+		)) as { code: number }
+		expect(error.code).toBe(1)
+	})
 })
 
 describe('mywb file model extract', () => {

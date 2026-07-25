@@ -1,7 +1,12 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { richTextToPlainText } from '@mywb/core/exec'
 import type { BoardModel } from '@mywb/node-adapter/headless-document'
-import { buildBoardFromModel } from '@mywb/node-adapter/headless-document'
+import {
+	applyRecordChanges,
+	buildBoardFromModel,
+	readMywbDocument,
+	updateBoardFromModel
+} from '@mywb/node-adapter/headless-document'
 import { z } from 'zod'
 import { focusExec, SVG_EXEC } from '../app-commands'
 import {
@@ -200,7 +205,7 @@ export function registerMywbTools(server: McpServer): void {
 		'scaffold_board',
 		{
 			description:
-				'Build a complete architecture board (.mywb file) from a declarative model, headlessly — the app does not need the document open. Writes to targetPath on this machine (same trust model as exec).',
+				'Build a complete architecture board (.mywb file) from a declarative model, headlessly — the app does not need the document open. Writes to targetPath on this machine (same trust model as exec). Pass update:true to merge the model into a board that already exists: components keep the position and size a human gave them, and notes or hand-drawn shapes are left untouched. Use update on any board a human has opened; a plain scaffold overwrites the file.',
 			inputSchema: z.object({
 				model: z.object({
 					title: z.string().optional(),
@@ -220,16 +225,26 @@ export function registerMywbTools(server: McpServer): void {
 						.array(z.object({ name: z.string(), members: z.array(z.string()) }))
 						.optional()
 				}),
-				targetPath: z.string()
+				targetPath: z.string(),
+				update: z.boolean().optional()
 			})
 		},
-		async ({ model, targetPath }) => {
+		async ({ model, targetPath, update }) => {
 			try {
-				await buildBoardFromModel(targetPath, model as BoardModel)
+				let updated: { put: number; removed: number } | undefined
+				if (update) {
+					const doc = await readMywbDocument(targetPath)
+					const changes = updateBoardFromModel(doc.records, model as BoardModel)
+					await applyRecordChanges(targetPath, changes)
+					updated = { put: changes.put.length, removed: changes.removed.length }
+				} else {
+					await buildBoardFromModel(targetPath, model as BoardModel)
+				}
 				return jsonResult({
 					target: targetPath,
 					components: model.components.length,
-					edges: model.edges.length
+					edges: model.edges.length,
+					...(updated ? { updated } : {})
 				})
 			} catch (error) {
 				return errorResult(error)

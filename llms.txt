@@ -31,6 +31,13 @@ headless through the `mywb file` CLI.
   (flowchart or `--syntax c4`); to import a Mermaid diagram, translate it to
   a scaffold model JSON yourself and run `mywb file scaffold` — no parser
   needed
+- Model round-trip: `mywb file model extract <board> <model.json>` reads a
+  board back into its model, and `mywb file scaffold <model.json> <board>
+  --update` merges an edited model into the existing board. Commit the model
+  next to the board as `<board-name>.model.json`: it is the reviewable,
+  diffable source of truth, while the board keeps the layout and notes a
+  human added. Always use `--update` on a board a human has opened; a plain
+  scaffold overwrites the file
 
 ## Optional
 
