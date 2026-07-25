@@ -8,6 +8,14 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **`mywb` on npm** — the CLI and MCP server install without cloning the repo:
+  `claude mcp add mywb -- npx -y mywb mcp`, or `npm i -g mywb`. The published
+  bundle is self-contained, so the drift-check example and its CI template now
+  use `npx -y mywb` instead of a monorepo path or a vendored `dist/`.
+- **Release workflow** — pushing a `v*` tag builds the macOS DMG and the Linux
+  AppImage + deb and attaches them to a draft GitHub Release, so a release no
+  longer needs binaries uploaded by hand.
+
 - **Model ⇄ board round-trip** — a board's architecture is also a small JSON model
   you can commit and review. `mywb file model extract <board> <model>` reads it
   out; `mywb file scaffold <model> <board> --update` merges an edited model back

@@ -16,9 +16,23 @@ files.
 
 ## Install
 
-There are no pre-built binaries published yet — build from source (below). The
-macOS and Linux desktop builds are produced by CI; a signed/released download is
-planned (see the roadmap).
+**Desktop app** — download from
+[Releases](https://github.com/phuc-nt/my-whiteboard/releases):
+
+- **Linux** — `.AppImage` (any distro; `chmod +x` then run) or `.deb`
+  (Debian/Ubuntu).
+- **macOS** — `.dmg`. The builds are unsigned, so the first launch needs a
+  right-click → **Open** instead of a double-click.
+- **Windows** — not built yet.
+
+**CLI + MCP server** — no clone needed, and it works with any MCP client:
+
+```bash
+claude mcp add mywb -- npx -y mywb mcp   # point a coding agent at the app
+npm i -g mywb                            # or install the `mywb` CLI globally
+```
+
+**From source** (contributors, or to get a build before it is released):
 
 ```bash
 git clone https://github.com/phuc-nt/my-whiteboard.git
@@ -26,8 +40,8 @@ cd my-whiteboard
 npm install
 npm run dev         # launch the desktop app
 
-npm run build:mac   # or: build an unsigned macOS DMG   → apps/desktop/release/
-npm run build:linux # or: build a Linux AppImage + deb   → apps/desktop/release/
+npm run build:mac   # unsigned macOS DMG        → apps/desktop/release/
+npm run build:linux # Linux AppImage + deb      → apps/desktop/release/
 ```
 
 Requires **Node.js ≥ 22.12**. New contributors: see [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -64,12 +78,12 @@ npm run build:mac  # unsigned universal macOS DMG → apps/desktop/release/
   `POST /api/doc/:id/exec` runs code against the live editor; `GET /readme`
   documents it for an agent. Install the skill for your agents from
   **Help → Install Agent Skills…**.
-- **MCP server** — `mywb mcp` (from `apps/cli`) exposes the running app's canvas
-  as MCP tools (`list_documents`, `read_shapes` — full or summary detail,
-  `read_bindings`, `screenshot`, `export_svg`, `exec`, `scaffold_board`,
-  `focus_shape`) so any MCP client
+- **MCP server** — `mywb mcp` (published as [`mywb`](https://www.npmjs.com/package/mywb)
+  on npm) exposes the running app's canvas as MCP tools (`list_documents`,
+  `read_shapes` — full or summary detail, `read_bindings`, `screenshot`,
+  `export_svg`, `exec`, `scaffold_board`, `focus_shape`) so any MCP client
   connects with one command:
-  `claude mcp add mywb -- node apps/cli/dist/cli.js mcp`.
+  `claude mcp add mywb -- npx -y mywb mcp`.
 - **Custom shapes** — `service-node`, `code-ref`, `mermaid-block` carry
   structured, agent-readable data for architecture and code-reference diagrams.
 - **Model ⇄ board round-trip** — a board's architecture is also a small JSON

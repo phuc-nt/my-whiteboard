@@ -1,0 +1,65 @@
+# Turns a `v*` tag into a GitHub Release with downloadable desktop builds, so
+# users never have to clone and build. Kept separate from ci.yml: a release is a
+# manual, tagged event and its failure should not colour the push/PR signal.
+#
+# Both builds are unsigned — macOS needs a right-click → Open on first launch,
+# Linux has no notarization step at all. The release is created as a draft so
+# the notes can be reviewed before it goes public.
+#
+# Node 24 here matches ci.yml; actions are on v5 because the v4 line runs on the
+# deprecated Node 20 runner.
+
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  # Lets a release be rehearsed against a tag without pushing a new one.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to build and attach a draft release to'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  desktop:
+    strategy:
+      # One OS failing should not discard the other's artifacts — the draft
+      # release still gets whatever built, and the missing half can be retried.
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            script: build:mac
+            artifacts: apps/desktop/release/*.dmg
+          - os: ubuntu-latest
+            script: build:linux
+            artifacts: |
+              apps/desktop/release/*.AppImage
+              apps/desktop/release/*.deb
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # electron-builder reads apps/desktop/electron-builder.yml, which sets
+      # `identity: null` so the macOS build never looks for a signing keychain.
+      - name: Build desktop package
+        run: npm run ${{ matrix.script }} -w apps/desktop
+
+      - name: Attach to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          draft: true
+          files: ${{ matrix.artifacts }}
+          fail_on_unmatched_files: true
