@@ -181,11 +181,14 @@ group ra toạ độ âm, và component mới đè lên card người kéo vào 
 
 Drift-check v3 scope full chạy trên cả 3 repo (84 claim): **0 claim khai báo nào
 sai** — mọi component/edge đã vẽ đều verify được — nhưng **12 cạnh runtime bị bỏ
-sót**: my-whiteboard 1 (`mywb CLI → desktop app` qua loopback HTTP, đã sửa cùng
-component VS Code extension còn thiếu), my-db-mate 3 (API route gọi DB và
-provider trực tiếp, một Server Component gọi service không qua HTTP), my-crew 8
+sót**: my-whiteboard 1 (`mywb CLI → desktop app` qua loopback HTTP, kèm component
+VS Code extension còn thiếu), my-db-mate 3 (API route gọi DB và provider trực
+tiếp, một Server Component gọi service không qua HTTP), my-crew 8
 (`AgentRuntime Backends` không có cạnh vào nào — component trông như trôi nổi).
 Diagram vẽ tay đúng hình nhưng thiếu, đúng loại lỗi mắt người duyệt không thấy.
+Cả 12 đã tự verify lại tại nhiều call site rồi **sửa qua model** (không vẽ tay
+lên board), `--update` giữ nguyên 100% vị trí card ở cả 3 repo, board-sync ok lại
+sau khi sửa.
 
 3 run cũng lộ 5 lỗ trong SKILL.md, sửa hết: bẫy false-drift `--include=*.ts`
 không quote (zsh trả `0` giả đọc y như "không có dependency"), reverse-edge check
