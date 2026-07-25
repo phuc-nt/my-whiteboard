@@ -4,13 +4,29 @@
 	"description": "Open and edit .mywb whiteboard files on a tldraw canvas inside VS Code",
 	"version": "0.1.0",
 	"publisher": "phuc-nt",
-	"private": true,
-	"license": "MIT",
+	"license": "Apache-2.0",
+	"homepage": "https://github.com/phuc-nt/my-whiteboard#readme",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/phuc-nt/my-whiteboard.git",
+		"directory": "apps/vscode"
+	},
+	"bugs": {
+		"url": "https://github.com/phuc-nt/my-whiteboard/issues"
+	},
 	"engines": {
 		"vscode": "^1.90.0"
 	},
 	"categories": [
-		"Visualization"
+		"Visualization",
+		"Other"
+	],
+	"keywords": [
+		"whiteboard",
+		"tldraw",
+		"diagram",
+		"architecture-diagram",
+		"canvas"
 	],
 	"main": "./dist/extension.js",
 	"activationEvents": [],

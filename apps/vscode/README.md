@@ -5,16 +5,18 @@ Same format, same custom shapes (service-node, code-ref, mermaid-block) as the
 desktop app — the board in your repo is now editable next to the code it
 describes.
 
-## Install (local .vsix)
+## Install
+
+Search **My Whiteboard** in the Extensions view, or:
 
 ```bash
-npm install && npm run build -w apps/vscode
-npm run package:vsix -w apps/vscode
-code --install-extension apps/vscode/my-whiteboard.vsix
+code --install-extension phuc-nt.my-whiteboard
 ```
 
 Open any `.mywb` file — it loads in the board editor. Edit, then save with
 Cmd+S like any file.
+
+To build it yourself instead, see [Development](#development) below.
 
 ## Limitations (v0.1, by design)
 
@@ -34,4 +36,6 @@ Cmd+S like any file.
 ```bash
 npm run build -w apps/vscode      # webview bundle (vite) + extension (tsc)
 npm run e2e:vscode                # integration tests in a real downloaded VS Code
+npm run package:vsix -w apps/vscode && \
+  code --install-extension apps/vscode/my-whiteboard.vsix   # install a local build
 ```

@@ -6,3 +6,5 @@ tsconfig*.json
 vite.config.ts
 *.vsix
 dist/test/**
+# Debug maps of the extension host bundle serve no one who installs it.
+dist/**/*.map
