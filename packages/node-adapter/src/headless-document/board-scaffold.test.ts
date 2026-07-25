@@ -8,7 +8,7 @@ import { readMywbDocument } from './headless-document'
 
 // Locks the scaffold contract: a model of components + relation edges becomes
 // a complete, schema-valid board — positioned nodes, title, arrows each bound
-// to both endpoints, relation carried in arrow meta.
+// to both endpoints, relation carried in arrow meta and shown as the label.
 
 const dirs: string[] = []
 async function tempFile(): Promise<string> {
@@ -55,7 +55,7 @@ const model: BoardModel = {
 }
 
 describe('buildBoardFromModel', () => {
-	it('builds a full board: nodes, title, arrows with two bindings and relation meta', async () => {
+	it('builds a full board: nodes, title, arrows with two bindings and a relation on both meta and label', async () => {
 		const file = await tempFile()
 		await buildBoardFromModel(file, model)
 
@@ -79,12 +79,24 @@ describe('buildBoardFromModel', () => {
 			expect(terminals.sort()).toEqual(['end', 'start'])
 		}
 
-		const relations = byType('arrow').map(
-			(a) => (a as unknown as { meta: { relation: string } }).meta.relation
-		)
-		expect(new Set(relations)).toEqual(
+		const arrows = byType('arrow') as unknown as Array<{
+			meta: { relation: string }
+			props: { richText?: { content?: Array<{ content?: Array<{ text?: string }> }> } }
+		}>
+		expect(new Set(arrows.map((a) => a.meta.relation))).toEqual(
 			new Set(['calls', 'reads', 'writes', 'embeds', 'depends-on'])
 		)
+
+		// meta.relation is what agents read; props.richText is the label a human
+		// sees on the canvas. Both come from the same model edge, so they must
+		// agree — otherwise the board says one thing and shows another.
+		for (const arrow of arrows) {
+			const label = (arrow.props.richText?.content ?? [])
+				.flatMap((block) => block.content ?? [])
+				.map((leaf) => leaf.text ?? '')
+				.join('')
+			expect(label).toBe(arrow.meta.relation)
+		}
 	})
 
 	it('lays nodes out along the edge flow: callers above callees, no overlapping cards', async () => {
