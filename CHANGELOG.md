@@ -6,6 +6,22 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Model ⇄ board round-trip** — a board's architecture is also a small JSON model
+  you can commit and review. `mywb file model extract <board> <model>` reads it
+  out; `mywb file scaffold <model> <board> --update` merges an edited model back
+  into an existing board, keeping the layout, sizes and sticky notes a human
+  added. Arrows now carry their relation label on the canvas.
+- **Drift-check skill v3** — reads the committed model instead of full board JSON
+  and adds a mechanical `board-sync` claim (extract + diff, no inference).
+
+### Fixed
+
+- `scaffold --update` no longer places a new component on top of a card that was
+  dragged into its slot, duplicates arrows on boards predating the id-prefix
+  convention, or sends a card moving between groups to negative coordinates.
+
 ## [0.1.0] — 2026-07-25
 
 First public release. A local-first, single-user whiteboard for engineers where

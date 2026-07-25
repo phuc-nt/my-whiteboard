@@ -171,7 +171,7 @@ source of truth diff được. `file model extract` đọc board ra model,
 `file scaffold --update` merge model đã sửa trở lại board mà **giữ layout, size
 và note người vẽ** (model chỉ own service-node, frame trùng tên group, title, và
 arrow nối 2 component đã khai báo). Arrow mang label quan hệ trên canvas.
-Drift-skill v3 đọc model (1.7 KB thay vì 30 KB records) + claim `board-sync`
+Drift-skill v3 đọc model (2.4 KB thay vì 39 KB records) + claim `board-sync`
 kiểm model↔board bằng `extract + jq diff`, không suy luận.
 
 Dogfood 3 repo (my-whiteboard, my-db-mate, my-crew): cả 3 có model canonical,
