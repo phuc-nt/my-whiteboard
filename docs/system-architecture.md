@@ -76,6 +76,38 @@ client connects
 with `claude mcp add mywb`. The MCP server is a thin proxy; it adds no new
 network surface beyond the loopback API.
 
+## Model ⇄ board round-trip
+
+An architecture board is also a small JSON **model** (`components`, `edges`,
+optional `groups`) that is committed next to it as `<board>.model.json`. The
+board is a binary zip; the model is what a reviewer reads in a PR and what the
+drift-check skill loads instead of thousands of records.
+
+Three functions in `packages/node-adapter/src/headless-document/` own the loop,
+all exposed through `mywb file`:
+
+- `buildBoardFromModel` (`file scaffold`) — model → a new board, laid out by
+  dagre (entry surfaces left, storage right).
+- `extractBoardModel` (`file model extract`) — board → model. Read back through
+  the same shape semantics the skill documents, so extract ∘ scaffold is the
+  identity on the model.
+- `updateBoardFromModel` (`file scaffold --update`) — model → an **existing**
+  board, as a merge. Ownership is what makes it safe: the model owns
+  service-nodes, frames named after a model group, the title text, and arrows
+  connecting two declared components; everything else on the canvas belongs to
+  the human and is copied through untouched, `parentId` included. Kept cards
+  keep the position and size a human gave them, so a re-render never undoes a
+  layout — and a new component slides down its dagre column rather than landing
+  on a card that was dragged into its slot.
+
+`updateBoardFromModel` returns a `RecordChanges` set for `applyRecordChanges`
+rather than rewriting the archive: that path validates against the app's own
+store schema, checks for dangling parents and binding endpoints, and preserves
+`assets/` and `script/` — all of which a fresh archive write would lose.
+
+Plain `file scaffold` on an existing board overwrites it. `--update` is the
+supported way to re-render a board a human has opened.
+
 ## Custom schemes
 
 `file://` breaks `FontFace`, storage, and CSP `'self'` semantics, so the built

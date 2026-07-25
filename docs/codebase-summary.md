@@ -12,7 +12,10 @@ packages/node-adapter/       # @mywb/node-adapter — Node-only shared code (no 
     │                          #   implements core RecordStore) — used by desktop AND headless tools
     └── headless-document/     # read/applyRecordChanges/save on .mywb without the app;
                                #   validation = headless TLStore with the app's shape schemas;
-                               #   fixture-builder for tests and examples
+                               #   fixture-builder for tests and examples;
+                               #   board-scaffold (model → board, dagre layout),
+                               #   board-model-extract (board → model),
+                               #   board-scaffold-update (model → existing board, merge)
 
 packages/web-adapter/        # @mywb/web-adapter — browser-only (no electron, no node:*)
 └── src/
@@ -54,7 +57,10 @@ services/agent-relay/        # my-whiteboard-agent-relay — read-only Agent Gat
                              #   getShapes/getBindings). NO exec route by design (that is Stage 2c)
 
 apps/cli/                    # my-whiteboard-cli — bin `mywb` (self-contained dist via vite SSR)
-                             #   file mode (headless): `mywb file read|apply ...`
+                             #   file mode (headless): `mywb file read|apply|mermaid ...`
+                             #     `file scaffold <model> <board> [--update]` renders a model onto a
+                             #     board (--update merges, keeping human layout/notes);
+                             #     `file model extract <board> <model>` reads it back out
                              #   app mode (live):      `mywb app docs|search|exec ...` — talks to the
                              #     RUNNING desktop app via server.json (per-OS userData; override
                              #     --server-json / MYWB_SERVER_JSON)
@@ -65,8 +71,10 @@ apps/cli/                    # my-whiteboard-cli — bin `mywb` (self-contained 
                              #     same agent API; @modelcontextprotocol/sdk (externalized, not bundled)
                              #   + dist/make-fixture.js for sample boards
 
-examples/ci-drift-check/     # GitHub Action template + SKILL.md: agent reads the diagram via
-                             #   the CLI and compares it with the code (drift-as-review)
+examples/ci-drift-check/     # GitHub Action template + SKILL.md: agent reads the committed
+                             #   <board>.model.json (falling back to full board JSON) and compares
+                             #   it with the code (drift-as-review); model↔board checked
+                             #   mechanically as a `board-sync` claim
 ```
 
 ## Key contracts

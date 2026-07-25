@@ -164,6 +164,36 @@ Phase 5 (đo metrics qua CI) hạ xuống opt-in — kênh CI là tính năng ph
 nào dùng tự cắm `ANTHROPIC_API_KEY`, không cần test thêm.
 Plan: [plans/260720-0438-moat-proof-diagram-as-review-ci/](../plans/260720-0438-moat-proof-diagram-as-review-ci/plan.md).
 
+## Model ⇄ board round-trip ✅ (done 2026-07-25)
+
+Board thôi là output một lần; giờ có **model JSON commit cạnh board** làm
+source of truth diff được. `file model extract` đọc board ra model,
+`file scaffold --update` merge model đã sửa trở lại board mà **giữ layout, size
+và note người vẽ** (model chỉ own service-node, frame trùng tên group, title, và
+arrow nối 2 component đã khai báo). Arrow mang label quan hệ trên canvas.
+Drift-skill v3 đọc model (1.7 KB thay vì 30 KB records) + claim `board-sync`
+kiểm model↔board bằng `extract + jq diff`, không suy luận.
+
+Dogfood 3 repo (my-whiteboard, my-db-mate, my-crew): cả 3 có model canonical,
+board-sync ok cả 3, update giữ nguyên 100% vị trí tay. Dogfood bắt **3 bug thật**
+mà unit test bỏ sót — arrow scaffold trước khi có id prefix bị nhân đôi, card đổi
+group ra toạ độ âm, và component mới đè lên card người kéo vào đúng ô dagre.
+
+Drift-check v3 scope full chạy trên cả 3 repo (84 claim): **0 claim khai báo nào
+sai** — mọi component/edge đã vẽ đều verify được — nhưng **12 cạnh runtime bị bỏ
+sót**: my-whiteboard 1 (`mywb CLI → desktop app` qua loopback HTTP, đã sửa cùng
+component VS Code extension còn thiếu), my-db-mate 3 (API route gọi DB và
+provider trực tiếp, một Server Component gọi service không qua HTTP), my-crew 8
+(`AgentRuntime Backends` không có cạnh vào nào — component trông như trôi nổi).
+Diagram vẽ tay đúng hình nhưng thiếu, đúng loại lỗi mắt người duyệt không thấy.
+
+3 run cũng lộ 5 lỗ trong SKILL.md, sửa hết: bẫy false-drift `--include=*.ts`
+không quote (zsh trả `0` giả đọc y như "không có dependency"), reverse-edge check
+thiếu ngưỡng nên không reproducible, ví dụ loại-trừ chỉ có JS/TS (thiếu
+`TYPE_CHECKING`/docstring), `repoUrl` trỏ path gitignored bị tính drift theo
+trạng thái checkout, và `run.base` không định nghĩa khi scope `full`.
+Plan: [plans/260725-0812-model-board-roundtrip/](../plans/260725-0812-model-board-roundtrip/plan.md).
+
 ## Stage 2c — Exec-remote + script sandbox trên web (ứng viên, demote 2026-07-19)
 
 Gateway exec (agent chạy code trên canvas web qua relay) + script sandbox
