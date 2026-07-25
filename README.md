@@ -119,6 +119,7 @@ flowchart LR
   n_agent_relay -->|"imports"| n_mywb_core
   n_VS_Code_extension -->|"imports"| n_mywb_core
   n_VS_Code_extension -->|"imports"| n_mywb_web_adapter
+  n_mywb_CLI -->|"calls over loopback HTTP"| n_desktop_app__Electron
   %% code-ref: packages/core/src/shapes/service-node/service-node-shape-util.tsx:8-8
   %% code-ref: apps/cli/src/cli-main.ts:15-38
   classDef api fill:#dbeafe,stroke:#1d4ed8

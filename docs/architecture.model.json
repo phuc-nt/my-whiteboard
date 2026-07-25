@@ -109,6 +109,11 @@
       "from": "VS Code extension",
       "to": "@mywb/web-adapter",
       "relation": "imports"
+    },
+    {
+      "from": "mywb CLI",
+      "to": "desktop app (Electron)",
+      "relation": "calls over loopback HTTP"
     }
   ],
   "documentId": "35dabd5a-7f5b-40b7-a4de-90ac174a1466"
