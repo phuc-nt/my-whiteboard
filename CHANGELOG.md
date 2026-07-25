@@ -15,6 +15,11 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Release workflow** — pushing a `v*` tag builds the macOS DMG and the Linux
   AppImage + deb and attaches them to a draft GitHub Release, so a release no
   longer needs binaries uploaded by hand.
+- **First-run welcome board** — the very first launch opens a small real board
+  showing how an agent reaches the canvas, with the MCP command on a sticky note,
+  instead of a blank canvas. It is an ordinary `.mywb` file opened from a temp
+  copy, so it saves anywhere; a restored session or a file you opened the app
+  with takes precedence.
 
 - **Model ⇄ board round-trip** — a board's architecture is also a small JSON model
   you can commit and review. `mywb file model extract <board> <model>` reads it

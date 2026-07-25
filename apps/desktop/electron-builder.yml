@@ -9,6 +9,10 @@ directories:
 files:
   - out/**
   - package.json
+# The first-run welcome board, read from process.resourcesPath at startup.
+extraResources:
+  - from: resources/welcome.mywb
+    to: welcome.mywb
 # .mywb documents open in the app from Finder.
 fileAssociations:
   - ext: mywb

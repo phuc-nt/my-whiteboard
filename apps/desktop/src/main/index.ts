@@ -32,6 +32,7 @@ import {
 	readSession,
 	writeSession
 } from './session-restore-manager'
+import { stageWelcomeBoard } from './welcome-board'
 import type { WindowState } from './window-manager'
 import {
 	allOpenDocumentIds,
@@ -190,8 +191,14 @@ async function persistSession(cleanExit: boolean): Promise<void> {
 
 const documentIdInUse = (documentId: string): boolean => !!findWindowByDocumentId(documentId)
 
-/** Crash recovery + session restore, run once at startup before any window. */
-async function restoreOrRecoverStartupWindows(): Promise<void> {
+/**
+ * Crash recovery + session restore, run once at startup before any window.
+ *
+ * Returns whether this launch found no previous session at all — the signal the
+ * caller uses to decide between the welcome board and an empty document. It is
+ * read here because markSessionLaunched below overwrites it immediately.
+ */
+async function restoreOrRecoverStartupWindows(): Promise<{ firstRun: boolean }> {
 	const previousSession = await readSession()
 	const recoverables = await listRecoverableWorkingCopies()
 	await markSessionLaunched(previousSession)
@@ -248,6 +255,8 @@ async function restoreOrRecoverStartupWindows(): Promise<void> {
 			console.error(`Could not restore ${entry.filePath}:`, error)
 		}
 	}
+
+	return { firstRun: previousSession === null }
 }
 
 const agentApiServer = new AgentApiServer()
@@ -333,8 +342,19 @@ app.whenReady().then(async () => {
 	registerIpcHandlers()
 	installAgentDocumentProvider()
 	await installApplicationMenu()
-	await restoreOrRecoverStartupWindows()
-	if (windowCount() === 0) newDocument()
+	const { firstRun } = await restoreOrRecoverStartupWindows()
+	if (windowCount() === 0) {
+		// Only the very first launch with nothing else to show gets the welcome
+		// board: not a restored session, and not a file the user opened us with
+		// (pendingOpenFiles is already filled from argv, and on macOS an
+		// open-file that lands later opens its own window regardless).
+		const welcomePath =
+			firstRun && pendingOpenFiles.length === 0 && !process.env.MYWB_NO_WELCOME
+				? await stageWelcomeBoard()
+				: null
+		if (welcomePath) await openDocumentFromPath(welcomePath)
+		else newDocument()
+	}
 	await persistSession(false)
 
 	// Crash leftovers of clean windows hold nothing recoverable — sweep them.

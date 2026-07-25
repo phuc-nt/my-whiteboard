@@ -34,7 +34,10 @@ export async function launchApp(
 	const { ELECTRON_RUN_AS_NODE, ...cleanEnv } = process.env as Record<string, string>
 	return electron.launch({
 		args: [join(here, '..', 'out', 'main', 'index.js'), ...extraArgs],
-		env: { ...cleanEnv, ...env, MYWB_TEST_USER_DATA: userDataDir }
+		// Every launch gets a fresh userData dir, so every launch is a "first run"
+		// and would open the welcome board. Specs want the empty document they were
+		// written against; the welcome spec passes MYWB_NO_WELCOME='' to opt back in.
+		env: { MYWB_NO_WELCOME: '1', ...cleanEnv, ...env, MYWB_TEST_USER_DATA: userDataDir }
 	})
 }
 
