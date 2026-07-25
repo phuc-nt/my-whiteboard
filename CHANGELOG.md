@@ -6,15 +6,12 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Added
-
-- First public release preparation: `LICENSE` (Apache-2.0), `NOTICE`,
-  `CONTRIBUTING.md`, `SECURITY.md`, and this changelog.
-
 ## [0.1.0] — 2026-07-25
 
-First public snapshot. A local-first, single-user whiteboard for engineers where
-coding agents are first-class users.
+First public release. A local-first, single-user whiteboard for engineers where
+coding agents are first-class users. Published with `LICENSE` (Apache-2.0),
+`NOTICE`, `CONTRIBUTING.md`, and `SECURITY.md`; a Linux desktop build (AppImage +
+deb) is attached to the [release](https://github.com/phuc-nt/my-whiteboard/releases/tag/v0.1.0).
 
 ### Added
 
