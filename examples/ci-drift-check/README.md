@@ -26,7 +26,7 @@ Onboarding a repo no longer needs a drawing session. Describe the architecture
 as JSON and scaffold the board headlessly:
 
 ```bash
-npx -y mywb file scaffold model.json docs/architecture.mywb
+npx -y @phuc-nt-prime/mywb file scaffold model.json docs/architecture.mywb
 # model.json:
 # { "title": "my-app — architecture", "documentId": "my-app-architecture",
 #   "components": [{ "name": "web ui", "kind": "web", "repoUrl": "src/app" }, ...],
@@ -53,10 +53,10 @@ can move:
 
 ```bash
 # model changed (a component added, an edge rewired) → re-render the board
-npx -y mywb file scaffold docs/architecture.model.json docs/architecture.mywb --update
+npx -y @phuc-nt-prime/mywb file scaffold docs/architecture.model.json docs/architecture.mywb --update
 
 # board changed (someone rearranged it in the app) → read the model back out
-npx -y mywb file model extract docs/architecture.mywb docs/architecture.model.json
+npx -y @phuc-nt-prime/mywb file model extract docs/architecture.mywb docs/architecture.model.json
 ```
 
 `--update` merges instead of overwriting: components keep the position and size
@@ -78,10 +78,10 @@ cat > /tmp/model.json <<'EOF'
   "components": [{ "name": "web ui", "kind": "web" }, { "name": "api", "kind": "api" }],
   "edges": [{ "from": "web ui", "to": "api", "relation": "calls" }] }
 EOF
-npx -y mywb file scaffold /tmp/model.json /tmp/architecture.mywb
-npx -y mywb file read /tmp/architecture.mywb --json > diagram.json
+npx -y @phuc-nt-prime/mywb file scaffold /tmp/model.json /tmp/architecture.mywb
+npx -y @phuc-nt-prime/mywb file read /tmp/architecture.mywb --json > diagram.json
 # hand diagram.json + SKILL.md to your agent, or eyeball it:
-npx -y mywb file read /tmp/architecture.mywb
+npx -y @phuc-nt-prime/mywb file read /tmp/architecture.mywb
 ```
 
 `examples/ci-drift-check/sample-board.json` seeds a richer demo board (with
@@ -90,7 +90,7 @@ my-whiteboard checkout — it is a fixture builder, not a published command.
 
 ## Vendoring the CLI into your repo
 
-Not needed in most cases: point the workflow at `npx -y mywb`, which pins a
+Not needed in most cases: point the workflow at `npx -y @phuc-nt-prime/mywb`, which pins a
 version in your lockfile like any other dependency. Vendor only when CI has no
 npm registry access. The bundle is a directory, not a single file — `cli.js`
 loads sibling chunks from `assets/` — so copy the whole `dist/`:

@@ -28,8 +28,8 @@ files.
 **CLI + MCP server** — no clone needed, and it works with any MCP client:
 
 ```bash
-claude mcp add mywb -- npx -y mywb mcp   # point a coding agent at the app
-npm i -g mywb                            # or install the `mywb` CLI globally
+claude mcp add mywb -- npx -y @phuc-nt-prime/mywb mcp   # point a coding agent at the app
+npm i -g @phuc-nt-prime/mywb                            # or install the `mywb` CLI globally
 ```
 
 **From source** (contributors, or to get a build before it is released):
@@ -78,12 +78,12 @@ npm run build:mac  # unsigned universal macOS DMG → apps/desktop/release/
   `POST /api/doc/:id/exec` runs code against the live editor; `GET /readme`
   documents it for an agent. Install the skill for your agents from
   **Help → Install Agent Skills…**.
-- **MCP server** — `mywb mcp` (published as [`mywb`](https://www.npmjs.com/package/mywb)
+- **MCP server** — `mywb mcp` (published as [`@phuc-nt-prime/mywb`](https://www.npmjs.com/package/@phuc-nt-prime/mywb)
   on npm) exposes the running app's canvas as MCP tools (`list_documents`,
   `read_shapes` — full or summary detail, `read_bindings`, `screenshot`,
   `export_svg`, `exec`, `scaffold_board`, `focus_shape`) so any MCP client
   connects with one command:
-  `claude mcp add mywb -- npx -y mywb mcp`.
+  `claude mcp add mywb -- npx -y @phuc-nt-prime/mywb mcp`.
 - **Custom shapes** — `service-node`, `code-ref`, `mermaid-block` carry
   structured, agent-readable data for architecture and code-reference diagrams.
 - **Model ⇄ board round-trip** — a board's architecture is also a small JSON

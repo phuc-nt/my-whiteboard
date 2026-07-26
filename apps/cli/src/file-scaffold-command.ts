@@ -2,11 +2,12 @@ import type { BoardModel } from '@mywb/node-adapter/headless-document'
 import {
 	applyRecordChanges,
 	buildBoardFromModel,
+	lintBoardLayout,
 	readMywbDocument,
 	updateBoardFromModel
 } from '@mywb/node-adapter/headless-document'
 import { readFile } from 'node:fs/promises'
-import { writeStdout } from './write-stdout'
+import { writeStderr, writeStdout } from './write-stdout'
 
 // `mywb file scaffold <model.json> <target.mywb>` — build a complete
 // architecture board (positioned service nodes, title, relation arrows) from
@@ -50,4 +51,13 @@ export async function runFileScaffold(
 			...(changed ? { updated: changed } : {})
 		})}\n`
 	)
+
+	// Self-check only — never blocks. A human-moved card during --update is the
+	// human's choice; the hard gate is the standalone `lint-layout` command.
+	const written = await readMywbDocument(targetPath)
+	const violations = lintBoardLayout(written.records)
+	if (violations.length > 0) {
+		const lines = violations.map((v) => `${v.severity} ${v.rule}: ${v.message} [${v.shapeIds.join(', ')}]`)
+		await writeStderr(`lint-layout warnings:\n${lines.join('\n')}\n`)
+	}
 }

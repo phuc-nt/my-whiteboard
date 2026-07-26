@@ -7,3 +7,5 @@ export type { BoardModel, BoardModelComponent, BoardModelEdge, BoardModelGroup }
 export { extractBoardModel } from './board-model-extract'
 export { updateBoardFromModel } from './board-scaffold-update'
 export { createHeadlessStore } from './create-headless-store'
+export { lintBoardLayout } from './board-layout-lint'
+export type { LayoutViolation } from './board-layout-lint'

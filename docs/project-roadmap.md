@@ -4,7 +4,7 @@
 > forward plan. For a user-facing summary of released changes, see the
 > [changelog](../CHANGELOG.md).
 
-**My Whiteboard** — cập nhật 2026-07-25. Định hướng dài hạn: **hybrid, tách core**
+**My Whiteboard** — cập nhật 2026-07-26. Định hướng dài hạn: **hybrid, tách core**
 (xem [product-positioning-abstract.md](product-positioning-abstract.md) và
 [system-architecture.md](system-architecture.md)).
 
@@ -196,6 +196,41 @@ thiếu ngưỡng nên không reproducible, ví dụ loại-trừ chỉ có JS/T
 `TYPE_CHECKING`/docstring), `repoUrl` trỏ path gitignored bị tính drift theo
 trạng thái checkout, và `run.base` không định nghĩa khi scope `full`.
 Plan: [plans/260725-0812-model-board-roundtrip/](../plans/260725-0812-model-board-roundtrip/plan.md).
+
+## Layout lint + reverse-drift suggest ✅ (done 2026-07-26)
+
+12 cạnh bỏ sót ở stage trước bắt được bằng mắt người + agent đọc code tay —
+stage này tự động hoá cả 2 nửa của vấn đề: layout sai agent tự gây ra (dagre
+không phải luôn đúng) và cạnh runtime model không khai.
+
+**Layout lint** (`mywb file lint-layout <board.mywb>`): 3 rule cơ học
+(card-overlap, card-outside-frame — cả 2 `error`; arrow-through-card — `warn`,
+mật độ cao là bình thường). `file scaffold`/`--update` tự chạy self-check sau
+khi ghi, in warning ra stderr, không chặn exit code — gate cứng là lệnh
+`lint-layout` đứng riêng, dùng trong CI/e2e. Test: 8 unit test hand-built
+store bắt lại đúng 2 bug dagre thật (260724 overlap, 260725 toạ độ âm ra
+ngoài frame) làm regression fixture, cộng CLI test end-to-end kéo card chồng
+lên rồi xác nhận scaffold `--update` không còn ship im lặng được nữa.
+
+**Drift-skill v4 — suggest** (`examples/ci-drift-check/SKILL.md`): bước mới
+sau drift-check thường — quét outbound relationship mỗi component (import,
+HTTP call, DB client, queue, spawn/exec), trừ cạnh model đã khai, emit
+`findings.json` field `suggestions[]` (`kind`: missing-edge/missing-component,
+`confidence`: code-traced/inferred, evidence file:line). Chỉ đề xuất, không
+bao giờ tự sửa model — con người merge tay, `--update` mới render.
+
+**Benchmark ground-truth** (revert model 3 repo về trước fix 260725, quét
+lại, so với 12 cạnh đã biết đúng — [chi tiết](../plans/reports/dogfood-260726-reverse-drift-benchmark-report.md)):
+recall **12/12**, false positive **0** (1 case biên my-crew ghi nhận, không
+tính vì phụ thuộc bước confidence-gating có chạy đúng không), evidence
+file:line xác minh thật 12/12. Model my-whiteboard hiện tại (đã sửa) quét lại
+ra **0 suggestion** — không ồn trên diagram đã đúng. Phát hiện thật đáng ghi:
+component VS Code extension chỉ import `@mywb/core`/`@mywb/web-adapter` qua
+webview bundle build riêng, không phải import trực tiếp trong extension host
+source — sweep chỉ grep import statement sẽ bỏ sót lớp cạnh này, cần thêm
+bước đọc runtime dependency trong package manifest nếu class này lặp lại ở
+repo khác. Lint + board-sync cả 3 repo: 0 error, board-sync ok.
+Plan: [plans/260726-0925-reverse-drift-layout-lint/](../plans/260726-0925-reverse-drift-layout-lint/plan.md).
 
 ## Stage 2c — Exec-remote + script sandbox trên web (ứng viên, demote 2026-07-19)
 

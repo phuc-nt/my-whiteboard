@@ -228,6 +228,60 @@ describe('mywb file scaffold', () => {
 		)) as { code: number }
 		expect(error.code).toBe(1)
 	})
+
+	it('a clean layout scaffolds silently: no lint-layout warning on stderr', async () => {
+		const dir = await tempDir()
+		const modelPath = join(dir, 'model.json')
+		const board = join(dir, 'board.mywb')
+		await writeFile(modelPath, JSON.stringify(model))
+
+		const { stderr } = await run(process.execPath, [CLI, 'file', 'scaffold', modelPath, board])
+		expect(stderr).toBe('')
+	})
+
+	it('a layout a human drags into overlap surfaces on stderr, exit code unchanged', async () => {
+		const dir = await tempDir()
+		const modelPath = join(dir, 'model.json')
+		const board = join(dir, 'board.mywb')
+		await writeFile(modelPath, JSON.stringify(model))
+		await run(process.execPath, [CLI, 'file', 'scaffold', modelPath, board])
+
+		// Drag two cards onto the same spot, the same way the 260724 dagre bug
+		// did — a record-level apply is the same public path a human/agent uses.
+		const before = JSON.parse(
+			(await run(process.execPath, [CLI, 'file', 'read', board, '--json'])).stdout
+		) as { records: Array<{ typeName: string; record: Record<string, unknown> }> }
+		const cards = before.records.filter(
+			(r) => r.typeName === 'shape' && r.record.type === 'service-node'
+		)
+		const [a, b] = cards
+		const changesPath = join(dir, 'changes.json')
+		await writeFile(
+			changesPath,
+			JSON.stringify({
+				put: [
+					{ ...a.record, x: 0, y: 0 },
+					{ ...b.record, x: 0, y: 0 }
+				],
+				removed: []
+			})
+		)
+		await run(process.execPath, [CLI, 'file', 'apply', board, changesPath])
+
+		// --update on the same model re-runs the self-check against the
+		// now-overlapping board without touching the human-placed positions.
+		const { stdout, stderr } = await run(process.execPath, [
+			CLI,
+			'file',
+			'scaffold',
+			modelPath,
+			board,
+			'--update'
+		])
+		expect(JSON.parse(stdout).target).toBe(board)
+		expect(stderr).toContain('lint-layout warnings')
+		expect(stderr).toContain('card-overlap')
+	})
 })
 
 describe('mywb file model extract', () => {
@@ -360,6 +414,89 @@ describe('mywb file mermaid', () => {
 		const { stdout } = await run(process.execPath, [CLI, 'file', 'mermaid', board])
 		expect(stdout).toContain('subgraph')
 		expect(stdout).toContain('["backend"]')
+	})
+})
+
+describe('mywb file lint-layout', () => {
+	it('exits 0 and reports clean on a freshly scaffolded board', async () => {
+		const dir = await tempDir()
+		const modelPath = join(dir, 'model.json')
+		const board = join(dir, 'board.mywb')
+		await writeFile(
+			modelPath,
+			JSON.stringify({
+				components: [
+					{ name: 'ui', kind: 'web' },
+					{ name: 'api', kind: 'api' }
+				],
+				edges: [{ from: 'ui', to: 'api', relation: 'calls' }]
+			})
+		)
+		await run(process.execPath, [CLI, 'file', 'scaffold', modelPath, board])
+
+		const { stdout } = await run(process.execPath, [CLI, 'file', 'lint-layout', board])
+		expect(stdout).toContain('clean')
+	})
+
+	it('exits 2 and reports a card-overlap violation once two cards are dragged on top of each other', async () => {
+		const file = await makeFixture()
+		const before = JSON.parse(
+			(await run(process.execPath, [CLI, 'file', 'read', file, '--json'])).stdout
+		) as { records: Array<{ typeName: string; record: Record<string, unknown> }> }
+		const nodes = before.records.filter((r) => r.typeName === 'shape' && r.record.type === 'service-node')
+		const changesPath = join(await tempDir(), 'changes.json')
+		await writeFile(
+			changesPath,
+			JSON.stringify({
+				put: nodes.map((n) => ({ ...n.record, x: 0, y: 0 })),
+				removed: []
+			})
+		)
+		await run(process.execPath, [CLI, 'file', 'apply', file, changesPath])
+
+		const error = (await run(process.execPath, [CLI, 'file', 'lint-layout', file]).then(
+			() => {
+				throw new Error('expected lint-layout to report violations')
+			},
+			(e: { code: number; stdout: string }) => e
+		)) as { code: number; stdout: string }
+		expect(error.code).toBe(2)
+		expect(error.stdout).toContain('card-overlap')
+	})
+
+	it('--json prints structured violations', async () => {
+		const file = await makeFixture()
+		const before = JSON.parse(
+			(await run(process.execPath, [CLI, 'file', 'read', file, '--json'])).stdout
+		) as { records: Array<{ typeName: string; record: Record<string, unknown> }> }
+		const nodes = before.records.filter((r) => r.typeName === 'shape' && r.record.type === 'service-node')
+		const changesPath = join(await tempDir(), 'changes.json')
+		await writeFile(
+			changesPath,
+			JSON.stringify({ put: nodes.map((n) => ({ ...n.record, x: 0, y: 0 })), removed: [] })
+		)
+		await run(process.execPath, [CLI, 'file', 'apply', file, changesPath])
+
+		const error = (await run(process.execPath, [CLI, 'file', 'lint-layout', file, '--json']).then(
+			() => {
+				throw new Error('expected lint-layout to report violations')
+			},
+			(e: { code: number; stdout: string }) => e
+		)) as { code: number; stdout: string }
+		expect(error.code).toBe(2)
+		const parsed = JSON.parse(error.stdout)
+		expect(parsed.violations).toHaveLength(1)
+		expect(parsed.violations[0]).toMatchObject({ rule: 'card-overlap', severity: 'error' })
+	})
+
+	it('missing args is a usage error: exit 2', async () => {
+		const error = (await run(process.execPath, [CLI, 'file', 'lint-layout']).then(
+			() => {
+				throw new Error('expected usage error')
+			},
+			(e: { code: number }) => e
+		)) as { code: number }
+		expect(error.code).toBe(2)
 	})
 })
 

@@ -12,11 +12,12 @@ the same architecture claims as a few dozen lines of JSON instead of a few
 thousand records, so read it when it exists.
 
 ```bash
-# A function, not a variable: `MYWB="npx -y mywb"` then `$MYWB` fails in zsh,
-# which treats the whole string as one command name instead of splitting it.
+# A function, not a variable: `MYWB="npx -y @phuc-nt-prime/mywb"` then `$MYWB`
+# fails in zsh, which treats the whole string as one command name instead of
+# splitting it.
 # Inside the my-whiteboard monorepo use `node apps/cli/dist/cli.js` instead, and
 # a repo vendoring the built dist uses `node tools/mywb/dist/cli.js`.
-mywb() { npx -y mywb "$@"; }
+mywb() { npx -y @phuc-nt-prime/mywb "$@"; }
 BOARD=docs/architecture.mywb
 MODEL="${BOARD%.mywb}.model.json"
 
@@ -195,6 +196,70 @@ Decide which claims to actually evaluate before reading any code:
    workflow's job, not yours. No findings → all claims `ok`; do not invent
    drift.
 
+## Suggesting what the model is missing
+
+A separate step from drift (which only checks claims the model already makes):
+for each component, sweep its code for outbound relationships and propose the
+ones the model does not declare. **Proposal only** — never edit the model or
+the board here. The human reviews suggestions and merges what they accept into
+the model by hand; "Updating the diagram" (below) stays the only write path.
+
+Run this after the drift procedure, using the same claims/scope you already
+collected — do not re-read the whole repo.
+
+1. For each in-scope component (skip `skipped-out-of-scope` ones — the sweep
+   is diff-scoped exactly like the reverse missing-edge check in step 3), grep
+   its `repoUrl` directory for outbound relationship signals:
+   - imports/requires of other components' packages or `repoUrl` paths
+   - HTTP calls (`fetch`, `axios`, `http.request`, an SDK client) whose target
+     resolves to another component
+   - DB client construction/queries against another component's schema
+   - queue producers/consumers (publish/subscribe, enqueue/dequeue)
+   - process spawn/exec of another component's binary or CLI
+   Target the sweep at the component's `repoUrl` directory with a quoted
+   `--include` glob per file type — the same zsh pitfall as step 2 applies here.
+2. Diff the candidates against the model's declared edges **from that
+   component** (`edge.from === component.name`). A candidate matching an
+   existing edge (same `to`, roughly the same `relation`) is not a suggestion.
+3. For each remaining candidate, decide `confidence`:
+   - `code-traced` — you can name the concrete import/call chain: file, line,
+     and the exact call or import statement naming the target.
+   - `inferred` — the target is only resolved at runtime (a config value, an
+     env var, a service discovered by name) and you are inferring which
+     component it maps to. Say in the evidence excerpt *why* it maps there
+     (e.g. "URL from `AGENT_API_SEARCH_PATH`, matches desktop app's agent API
+     route").
+   Apply the same runtime-vs-structural filter as step 3(a)/3(b) of the drift
+   procedure: skip dev-only/test-only/type-only references, and treat a
+   single lazy call site as worth flagging only at `inferred` confidence, not
+   silently dropped — the human decides whether it belongs on the diagram.
+4. Emit one `suggestion` claim per candidate (contract below) with `kind:
+   "missing-edge"` when both endpoints are already components, or `kind:
+   "missing-component"` when the code references something with no matching
+   component at all (name the thing you found in `to` and explain in the
+   evidence excerpt why it looks like a distinct component, not existing code
+   under a listed one).
+
+**Worked example** (my-whiteboard itself): the model declares
+`mywb CLI -> desktop app (Electron)` with relation `calls over loopback HTTP`.
+Sweeping `apps/cli/src/repoUrl` for outbound calls finds the concrete call
+site:
+
+```json
+{ "type": "suggestion", "kind": "missing-edge",
+  "from": "mywb CLI", "to": "desktop app (Electron)",
+  "relation": "calls over loopback HTTP",
+  "evidence": [{ "file": "apps/cli/src/app-server-client.ts", "line": 51,
+                 "excerpt": "fetch(`http://127.0.0.1:${info.port}${path}`, ..." }],
+  "confidence": "code-traced" }
+```
+
+(In the real repo this edge is already declared in the model, so a live run
+would filter it out at step 2 — shown here only as a worked example of the
+evidence shape. To see the suggest step actually re-propose it, drop the edge
+from a scratch copy of the model before running: the sweep should re-surface
+it with this exact evidence, proving the check is real and not decorative.)
+
 ## Output contract — findings.json
 
 Write a file named `findings.json` in the working directory containing ONLY
@@ -222,7 +287,21 @@ this JSON (no prose, no markdown fences):
     { "id": "shape:mno", "type": "frame", "claim": "subsystem 'backend' = api, db, worker",
       "status": "ok", "evidence": ["src/api", "src/db", "src/worker"] }
   ],
-  "summary": { "ok": 2, "drifted": 1, "unverifiable": 1, "skipped": 1 }
+  "summary": { "ok": 2, "drifted": 1, "unverifiable": 1, "skipped": 1 },
+  "suggestions": [
+    { "type": "suggestion", "kind": "missing-edge",
+      "from": "mywb CLI", "to": "desktop app (Electron)",
+      "relation": "calls over loopback HTTP",
+      "evidence": [{ "file": "apps/cli/src/app-server-client.ts", "line": 51,
+                     "excerpt": "fetch(`http://127.0.0.1:${info.port}${path}`, ..." }],
+      "confidence": "code-traced" },
+    { "type": "suggestion", "kind": "missing-component",
+      "from": "web app", "to": "redis cache",
+      "relation": "reads/writes session state",
+      "evidence": [{ "file": "apps/web/src/session-store.ts", "line": 14,
+                     "excerpt": "createClient({ url: process.env.REDIS_URL }) — no component in the model owns this" }],
+      "confidence": "inferred" }
+  ]
 }
 ```
 
@@ -236,6 +315,17 @@ it without checking for the key. On the model-first path add
 `component:` / `edge:` / `group:` id form; on the fallback path omit `model` and
 use shape ids. Include at most one `board-sync` claim, only on the model-first
 path.
+
+`suggestions` is additive and independent of `claims`/`summary` — always
+present as an array, `[]` when the sweep finds nothing new. Each entry:
+`kind` ∈ missing-edge | missing-component; `from`/`to` are component names
+(the same names used in `edge:` claim ids); `relation` is free text matching
+the model's edge `relation` style; `evidence` is an array of
+`{ file, line, excerpt }` (repo-relative `file`, 1-based `line`, `excerpt` a
+short code/config snippet — for `inferred` confidence, the excerpt must state
+why the reference maps to `to`); `confidence` ∈ code-traced | inferred.
+Suggestions never affect `summary`'s counts and never cause a `drifted`
+verdict on their own — they are proposals, not claims.
 
 ## Local pre-push
 

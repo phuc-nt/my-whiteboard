@@ -4,6 +4,7 @@
 import { parseArgs } from 'node:util'
 import { runAppDocs, runAppExec, runAppFocus, runAppSearch, runAppSvg } from './app-commands'
 import { runFileApply } from './file-apply-command'
+import { runFileLintLayout } from './file-lint-layout-command'
 import { MERMAID_SYNTAXES, runFileMermaid } from './file-mermaid-command'
 import { runFileModelExtract } from './file-model-command'
 import { runFileRead } from './file-read-command'
@@ -33,6 +34,11 @@ const USAGE = `Usage:
   mywb file mermaid <path.mywb> [--syntax flowchart|c4]
                                         Print the board as Mermaid text (default: flowchart,
                                         renders natively in GitHub READMEs)
+  mywb file lint-layout <path.mywb> [--json]
+                                        Check board geometry: overlapping cards, cards outside
+                                        their frame (errors), arrows crossing unrelated cards
+                                        (warning, printed only). Exit 0 clean, 2 on error-level
+                                        violations
   mywb app docs                         List documents open in the running app (JSON)
   mywb app search [<js>|-]              Run read-only JS in the app's search context
                                         (api.getDocs/getShapes/...); code from arg or stdin
@@ -107,6 +113,10 @@ async function main(): Promise<void> {
 			if (!MERMAID_SYNTAXES.includes(syntax)) usageExit(2)
 			await runFileMermaid(rest[0], syntax)
 			return
+		}
+		if (command === 'lint-layout' && rest.length === 1) {
+			const clean = await runFileLintLayout(rest[0], values.json)
+			process.exit(clean ? 0 : 2)
 		}
 		usageExit(2)
 	}

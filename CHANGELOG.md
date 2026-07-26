@@ -6,14 +6,29 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **`mywb file lint-layout <board.mywb>`** — checks board geometry: overlapping
+  cards and cards sticking out of their frame (errors), arrows crossing
+  unrelated cards (warning, printed only). `--json` for structured output.
+  `scaffold`/`--update` now run this as a non-blocking self-check after
+  writing, printing any warning to stderr without changing the exit code.
+- **Drift-check skill v4 — suggest** — a new step after the existing drift
+  check proposes relationships the model doesn't declare (an import, an HTTP
+  call, a DB client, a queue producer/consumer, a spawned process), each with
+  file:line evidence and a confidence level. Proposal only: it never edits the
+  model or the board — a human merges what they accept.
+
 ## [0.2.0] — 2026-07-26
 
 ### Added
 
-- **`mywb` on npm** — the CLI and MCP server install without cloning the repo:
-  `claude mcp add mywb -- npx -y mywb mcp`, or `npm i -g mywb`. The published
-  bundle is self-contained, so the drift-check example and its CI template now
-  use `npx -y mywb` instead of a monorepo path or a vendored `dist/`.
+- **`@phuc-nt-prime/mywb` on npm** — the CLI and MCP server install without
+  cloning the repo: `claude mcp add mywb -- npx -y @phuc-nt-prime/mywb mcp`, or
+  `npm i -g @phuc-nt-prime/mywb` (the installed command is still `mywb`). The
+  published bundle is self-contained, so the drift-check example and its CI
+  template now use `npx -y @phuc-nt-prime/mywb` instead of a monorepo path or a
+  vendored `dist/`.
 - **Release workflow** — pushing a `v*` tag builds the macOS DMG and the Linux
   AppImage + deb and attaches them to a draft GitHub Release, so a release no
   longer needs binaries uploaded by hand.
@@ -22,7 +37,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   instead of a blank canvas. It is an ordinary `.mywb` file opened from a temp
   copy, so it saves anywhere; a restored session or a file you opened the app
   with takes precedence.
-
 - **Model ⇄ board round-trip** — a board's architecture is also a small JSON model
   you can commit and review. `mywb file model extract <board> <model>` reads it
   out; `mywb file scaffold <model> <board> --update` merges an edited model back

@@ -1,5 +1,5 @@
 {
-	"name": "mywb",
+	"name": "@phuc-nt-prime/mywb",
 	"version": "0.2.0",
 	"description": "Headless CLI and MCP server for .mywb whiteboard documents: read and apply record-level changes, scaffold boards from a model, and expose a running My Whiteboard app to coding agents",
 	"keywords": [
@@ -27,7 +27,7 @@
 		"node": ">=22.12"
 	},
 	"bin": {
-		"mywb": "./dist/cli.js"
+		"mywb": "dist/cli.js"
 	},
 	"files": [
 		"dist"

@@ -17,8 +17,16 @@ import { connectAgentApi, focusedDocId, launchApp, shutdownApp } from './electro
 
 const here = dirname(fileURLToPath(import.meta.url))
 const CLI = join(here, '..', '..', 'cli', 'dist', 'cli.js')
+const WELCOME_BOARD = join(here, '..', 'resources', 'welcome.mywb')
 const run = promisify(execFile)
 const WELCOME = { MYWB_NO_WELCOME: '' }
+
+/** Run `file lint-layout --json`, returning stdout whether it exits 0 or 2. */
+async function lintLayout(boardPath: string): Promise<{ stdout: string }> {
+	return run(process.execPath, [CLI, 'file', 'lint-layout', boardPath, '--json']).catch(
+		(e: { stdout: string }) => e
+	)
+}
 
 /** Open-document names — the .mywb basename, or 'Untitled' when unsaved. */
 async function docNames(): Promise<string[]> {
@@ -73,6 +81,15 @@ test('the welcome board is a real board, not a blank canvas', async () => {
 	} finally {
 		await shutdownApp(app)
 	}
+})
+
+test('the shipped welcome board has no layout errors', async () => {
+	// Static resource file, checked with the CLI — no need to reach into the
+	// renderer. The board every first-run user sees must not carry the
+	// overlap/outside-frame bugs a dagre regen can silently reintroduce.
+	const { stdout } = await lintLayout(WELCOME_BOARD)
+	const { violations } = JSON.parse(stdout) as { violations: Array<{ severity: string }> }
+	expect(violations.filter((v) => v.severity === 'error')).toEqual([])
 })
 
 test('the opt-out flag keeps the plain empty document', async () => {
