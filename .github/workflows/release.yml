@@ -6,8 +6,8 @@
 # Linux has no notarization step at all. The release is created as a draft so
 # the notes can be reviewed before it goes public.
 #
-# Node 24 here matches ci.yml; actions are on v5 because the v4 line runs on the
-# deprecated Node 20 runner.
+# Node 24 here matches ci.yml, and the action pins match it too — the older
+# majors target the deprecated Node 20 runner.
 
 name: release
 
