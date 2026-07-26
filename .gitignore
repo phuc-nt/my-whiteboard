@@ -32,7 +32,9 @@ playwright-report/
 # Packaging output
 release/
 
-# vscode extension build artifacts
-apps/vscode/media/
+# vscode extension build artifacts (webview bundle is built, not committed;
+# the icon under media/ is a source asset and is kept)
+apps/vscode/media/assets/
+apps/vscode/media/index.html
 apps/vscode/.vscode-test/
 *.vsix
