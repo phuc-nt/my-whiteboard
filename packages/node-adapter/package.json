@@ -1,6 +1,6 @@
 {
 	"name": "@mywb/node-adapter",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Node adapter for My Whiteboard: .mywb archive and sqlite record store shared by the desktop app and headless tools",
 	"type": "module",
 	"private": true,

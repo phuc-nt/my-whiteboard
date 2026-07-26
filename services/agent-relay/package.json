@@ -1,6 +1,6 @@
 {
 	"name": "my-whiteboard-agent-relay",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Read-only relay between a coding agent and a My Whiteboard web tab: forwards read requests, never executes code",
 	"type": "module",
 	"private": true,

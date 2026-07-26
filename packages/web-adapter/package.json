@@ -1,6 +1,6 @@
 {
 	"name": "@mywb/web-adapter",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Browser adapter for My Whiteboard: .mywb archive (fflate) and WASM sqlite record store (sql.js), same format as desktop",
 	"type": "module",
 	"private": true,

@@ -2,7 +2,7 @@
 	"name": "my-whiteboard-vscode",
 	"displayName": "My Whiteboard",
 	"description": "Open and edit .mywb whiteboard files on a tldraw canvas inside VS Code",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"publisher": "phuc-nt",
 	"license": "Apache-2.0",
 	"homepage": "https://github.com/phuc-nt/my-whiteboard#readme",

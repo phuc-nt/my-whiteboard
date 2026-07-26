@@ -1,6 +1,6 @@
 {
 	"name": "my-whiteboard-web",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "My Whiteboard on the web: open/save .mywb files in the browser, canvas powered by @mywb/core",
 	"type": "module",
 	"private": true,

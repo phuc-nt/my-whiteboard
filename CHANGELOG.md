@@ -6,6 +6,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-07-26
+
 ### Added
 
 - **`mywb` on npm** — the CLI and MCP server install without cloning the repo:
@@ -75,5 +77,6 @@ deb) is attached to the [release](https://github.com/phuc-nt/my-whiteboard/relea
   or in CI (opt-in, needs `ANTHROPIC_API_KEY`).
 - **CI** — tiered `fast` + `e2e` workflows and a Linux build (AppImage + deb).
 
-[Unreleased]: https://github.com/phuc-nt/my-whiteboard/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/phuc-nt/my-whiteboard/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/phuc-nt/my-whiteboard/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/phuc-nt/my-whiteboard/releases/tag/v0.1.0

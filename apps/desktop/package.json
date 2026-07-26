@@ -1,7 +1,7 @@
 {
 	"name": "my-whiteboard-desktop",
 	"productName": "My Whiteboard",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Local-first whiteboard for engineers where coding agents are first-class users",
 	"main": "./out/main/index.js",
 	"type": "module",
